@@ -1,0 +1,6 @@
+@ss_blog_be_HostAddress = http://localhost:5079
+
+POST {{ss_blog_be_HostAddress}}/entry/
+Accept: application/json
+
+###
