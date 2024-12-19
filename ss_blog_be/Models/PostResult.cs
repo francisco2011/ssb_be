@@ -3,12 +3,12 @@
     public class PostResult
     {
         public IEnumerable<PostModel> Posts { get; set; }
-        public int TotalElements { get; set; }
+        public PaginationModel Pagination { get; set; }
 
-        public PostResult(IEnumerable<PostModel> posts, int totalElements)
+        public PostResult(IEnumerable<PostModel> posts, PaginationModel pagination)
         {
             Posts = posts;
-            TotalElements = totalElements;
+            Pagination = pagination;
         }
     }
 }

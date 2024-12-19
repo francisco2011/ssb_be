@@ -40,18 +40,11 @@ postApi.MapPut("/{id}/changePublishState", async ([FromRoute] long id) =>
     return Results.NoContent();
 });
 
-postApi.MapGet("/", async (HttpContext context, [FromQuery] int limit, [FromQuery] int offset, [FromQuery] int? typeId, [FromQuery] string[] tags, [FromQuery] bool? published, [FromHeader(Name = "x-include-total-elements")] bool? includeTotalElements) =>
+postApi.MapGet("/", async (HttpContext context, [FromQuery] int limit, [FromQuery] int offset, [FromQuery] int? typeId, [FromQuery] string[] tags, [FromQuery] bool? published) =>
 {
     PostDataService dataService = new PostDataService(new ConnectionBuilder().Connect(), new StorageService());
-    var result = await dataService.List(limit, offset, includeTotalElements.HasValue ? includeTotalElements.Value : false, typeId, tags, published);
-
-    if(includeTotalElements.HasValue && includeTotalElements.Value)
-    {
-        context.Response.Headers.Add("X-Total-Elements", result.TotalElements.ToString());
-        context.Response.Headers.Add("access-control-expose-headers", "X-Total-Elements");
-    }
-
-    return Results.Ok(result.Posts);
+    var result = await dataService.List(limit, offset, typeId, tags, published);
+    return Results.Ok(result);
 });
 
 postApi.MapGet("/{id}", async ([FromRoute] int id) =>
@@ -118,6 +111,8 @@ app.Run();
 [JsonSerializable(typeof(TagsModel))]
 [JsonSerializable(typeof(TagModel))]
 [JsonSerializable(typeof(ContentModel))]
+[JsonSerializable(typeof(PaginationModel))]
+[JsonSerializable(typeof(PostResult))]
 internal partial class AppJsonSerializerContext : JsonSerializerContext
 {
 

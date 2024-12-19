@@ -109,3 +109,4 @@ C:\Users\franc\source\repos\ssb__be\ss_blog_be\obj\Debug\net8.0\refint\ss_blog_b
 C:\Users\franc\source\repos\ssb__be\ss_blog_be\obj\Debug\net8.0\ss_blog_be.pdb
 C:\Users\franc\source\repos\ssb__be\ss_blog_be\obj\Debug\net8.0\ss_blog_be.genruntimeconfig.cache
 C:\Users\franc\source\repos\ssb__be\ss_blog_be\obj\Debug\net8.0\ref\ss_blog_be.dll
+C:\Users\franc\source\repos\ssb__be\ss_blog_be\obj\Debug\net8.0\ss_blog_be.sourcelink.json

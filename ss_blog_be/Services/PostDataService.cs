@@ -245,7 +245,7 @@ namespace ss_blog_be.Services
             return result.OrderByDescending(c => c.Ocurrences);
         }
 
-        private async Task<int> Count(int count, int offset, int? postTypeId, string[]? tags, bool? published)
+        private async Task<PaginationModel> Count(int count, int offset, int? postTypeId, string[]? tags, bool? published)
         {
             
             var sqlBuilder = new SQLBuilderS();
@@ -276,18 +276,18 @@ namespace ss_blog_be.Services
 
             var sql = q.Build();
             var totalElements = await this._conn.QuerySingleAsync<int>(sql);
-            return totalElements;
+            return new PaginationModel(count, offset, totalElements);
         }
 
-        public async Task<PostResult> List(int count, int offset, bool includeTotalElements, int? postTypeId, string[]? tags, bool? published)
+        public async Task<PostResult> List(int count, int offset, int? postTypeId, string[]? tags, bool? published)
         {
-            var total = 0;
+            var pag = new PaginationModel(count, offset);
 
-            if (includeTotalElements) 
+            if (count != 0) 
             {
-                total = await Count(count, offset, postTypeId, tags, published);
+                pag = await Count(count, offset, postTypeId, tags, published);
 
-                if (total == 0) return new PostResult([],total);
+                if (pag.TotalCount == 0) return new PostResult([], pag);
             }
 
             var result = new List<PostModel>();
@@ -358,7 +358,7 @@ namespace ss_blog_be.Services
 
             var dyna = (await this._conn.QueryAsync(sql));
 
-            if (dyna == null) return new PostResult([], total);
+            if (dyna == null) return new PostResult([], pag);
 
             foreach ( var dynb in dyna)
             {
@@ -406,7 +406,7 @@ namespace ss_blog_be.Services
                 result.Add(model);
                
             }
-            return new PostResult(result, total);
+            return new PostResult(result, pag);
         }
 
 
