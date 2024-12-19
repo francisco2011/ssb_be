@@ -3,6 +3,10 @@
   "WorkspaceRootPath": "C:\\Users\\franc\\source\\repos\\ssb__be\\",
   "Documents": [
     {
+      "AbsoluteMoniker": "D:0:0:{2DD1031E-8727-4EA3-8C3F-886C7863652D}|ss_blog_be\\ss_blog_be.csproj|c:\\users\\franc\\source\\repos\\ssb__be\\ss_blog_be\\models\\paginationmodel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{2DD1031E-8727-4EA3-8C3F-886C7863652D}|ss_blog_be\\ss_blog_be.csproj|solutionrelative:ss_blog_be\\models\\paginationmodel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
       "AbsoluteMoniker": "D:0:0:{2DD1031E-8727-4EA3-8C3F-886C7863652D}|ss_blog_be\\ss_blog_be.csproj|c:\\users\\franc\\source\\repos\\ssb__be\\ss_blog_be\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{2DD1031E-8727-4EA3-8C3F-886C7863652D}|ss_blog_be\\ss_blog_be.csproj|solutionrelative:ss_blog_be\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
@@ -42,11 +46,24 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 4,
+          "SelectedChildIndex": 0,
           "Children": [
             {
               "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 0,
+              "Title": "PaginationModel.cs",
+              "DocumentMoniker": "C:\\Users\\franc\\source\\repos\\ssb__be\\ss_blog_be\\Models\\PaginationModel.cs",
+              "RelativeDocumentMoniker": "ss_blog_be\\Models\\PaginationModel.cs",
+              "ToolTip": "C:\\Users\\franc\\source\\repos\\ssb__be\\ss_blog_be\\Models\\PaginationModel.cs",
+              "RelativeToolTip": "ss_blog_be\\Models\\PaginationModel.cs",
+              "ViewState": "AgIAAAIAAAAAAAAAAAAxwBIAAAAyAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2024-12-19T19:43:49.381Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
               "Title": "PostDataService.cs",
               "DocumentMoniker": "C:\\Users\\franc\\source\\repos\\ssb__be\\ss_blog_be\\Services\\PostDataService.cs",
               "RelativeDocumentMoniker": "ss_blog_be\\Services\\PostDataService.cs",
@@ -59,7 +76,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 2,
+              "DocumentIndex": 3,
               "Title": "ConnectionBuilder.cs",
               "DocumentMoniker": "C:\\Users\\franc\\source\\repos\\ssb__be\\ss_blog_be\\Services\\ConnectionBuilder.cs",
               "RelativeDocumentMoniker": "ss_blog_be\\Services\\ConnectionBuilder.cs",
@@ -72,7 +89,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 3,
+              "DocumentIndex": 4,
               "Title": "PostTypeService.cs",
               "DocumentMoniker": "C:\\Users\\franc\\source\\repos\\ssb__be\\ss_blog_be\\Services\\PostTypeService.cs",
               "RelativeDocumentMoniker": "ss_blog_be\\Services\\PostTypeService.cs",
@@ -80,11 +97,12 @@
               "RelativeToolTip": "ss_blog_be\\Services\\PostTypeService.cs",
               "ViewState": "AgIAABIAAAAAAAAAAAAowBkAAAAaAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2024-12-08T04:54:48.348Z"
+              "WhenOpened": "2024-12-08T04:54:48.348Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 4,
+              "DocumentIndex": 5,
               "Title": "SQLBuilderSConstants.cs",
               "DocumentMoniker": "C:\\Users\\franc\\source\\repos\\ssb__be\\ss_blog_be\\Common\\SQLBuilder\\SQLBuilderSConstants.cs",
               "RelativeDocumentMoniker": "ss_blog_be\\Common\\SQLBuilder\\SQLBuilderSConstants.cs",
@@ -92,11 +110,12 @@
               "RelativeToolTip": "ss_blog_be\\Common\\SQLBuilder\\SQLBuilderSConstants.cs",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2024-12-08T04:49:13.994Z"
+              "WhenOpened": "2024-12-08T04:49:13.994Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 0,
+              "DocumentIndex": 1,
               "Title": "Program.cs",
               "DocumentMoniker": "C:\\Users\\franc\\source\\repos\\ssb__be\\ss_blog_be\\Program.cs",
               "RelativeDocumentMoniker": "ss_blog_be\\Program.cs",
@@ -109,7 +128,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 5,
+              "DocumentIndex": 6,
               "Title": "SQLBuilderException.cs",
               "DocumentMoniker": "C:\\Users\\franc\\source\\repos\\ssb__be\\ss_blog_be\\Common\\SQLBuilder\\SQLBuilderException.cs",
               "RelativeDocumentMoniker": "ss_blog_be\\Common\\SQLBuilder\\SQLBuilderException.cs",
@@ -117,11 +136,12 @@
               "RelativeToolTip": "ss_blog_be\\Common\\SQLBuilder\\SQLBuilderException.cs",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2024-10-27T23:06:04.75Z"
+              "WhenOpened": "2024-10-27T23:06:04.75Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 6,
+              "DocumentIndex": 7,
               "Title": "launchSettings.json",
               "DocumentMoniker": "C:\\Users\\franc\\source\\repos\\ssb__be\\ss_blog_be\\Properties\\launchSettings.json",
               "RelativeDocumentMoniker": "ss_blog_be\\Properties\\launchSettings.json",
@@ -129,11 +149,12 @@
               "RelativeToolTip": "ss_blog_be\\Properties\\launchSettings.json",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001642|",
-              "WhenOpened": "2024-10-26T18:55:34.36Z"
+              "WhenOpened": "2024-10-26T18:55:34.36Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 7,
+              "DocumentIndex": 8,
               "Title": "appsettings.json",
               "DocumentMoniker": "C:\\Users\\franc\\source\\repos\\ssb__be\\ss_blog_be\\appsettings.json",
               "RelativeDocumentMoniker": "ss_blog_be\\appsettings.json",
@@ -141,7 +162,8 @@
               "RelativeToolTip": "ss_blog_be\\appsettings.json",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001642|",
-              "WhenOpened": "2024-10-26T18:55:30.376Z"
+              "WhenOpened": "2024-10-26T18:55:30.376Z",
+              "EditorCaption": ""
             }
           ]
         }

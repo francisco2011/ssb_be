@@ -15,8 +15,8 @@
         {
             TotalCount = totalElements;
             PageSize = count;
-            Page = offSet == 0 || count == 0 ? 1 : offSet / count;
-            PageCount = totalElements/count;
+            Page = offSet == 0 || count == 0 ? 1 : ( offSet / count );
+            PageCount = ( totalElements/count ) + (totalElements % count > 0 ? 1 : 0);
         }
 
         public PaginationModel(int count, int offSet)
