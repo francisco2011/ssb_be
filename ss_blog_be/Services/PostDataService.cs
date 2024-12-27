@@ -78,6 +78,9 @@ namespace ss_blog_be.Services
                         .Select("tagsCodeSnippets")
                         .Select("typeId")
                         .Where("ROWID", SQLBuilderOperatorsEnum.EQUAL, id)
+                        .From("postFTS")
+                        .Select("ROWID", "postfts_rowid")
+                        .Join("post", "postFTS", "ROWID", "rowid", SQLBuilderJoinTypeEnum.LEFT)
                         .Build();
 
             var dyna = (await this._conn.QueryFirstOrDefaultAsync(sql));
@@ -91,19 +94,22 @@ namespace ss_blog_be.Services
             string _sql = $"UPDATE post SET  isPublished = {newPublicationState.ToInt()} WHERE ROWID = {id}";
             await this._conn.ExecuteAsync(_sql);
 
+            if (dyna.postfts_rowid == null) return;
+
+            var isTypeFound = dyna.typeId is long && dyna.typeId != 0;
+
             if (!newPublicationState)
             {
                 //string sqlDel = $"DELETE FROM postFTS WHERE ROWID = '{id}'";
                 //but why? is this redundant?
-                string sqlDelStep1 = $"INSERT OR REPLACE INTO postFTS (ROWID, tags, tagsCodeSnippets) VALUES ('{id}', NULL , NULL)";
 
+                string sqlDelStep1 = $"INSERT OR REPLACE INTO postFTS (ROWID, tags, tagsCodeSnippets) VALUES ('{id}', NULL , NULL)";
                 await this._conn.ExecuteAsync(sqlDelStep1);
 
-                string sqlDelStep2 = $"INSERT INTO postFTS(postFTS, rowid, tags, tagsCodeSnippets) VALUES('delete', {id},  NULL , NULL)";
-
-                await this._conn.ExecuteAsync(sqlDelStep2);
+                //string sqlDelStep2 = $"INSERT INTO postFTS(postFTS, rowid, tags, tagsCodeSnippets) VALUES('delete', {id},  NULL , NULL)";
+                //await this._conn.ExecuteAsync(sqlDelStep2);
             }
-            else if(dyna.tags != null && !string.IsNullOrEmpty(dyna.tags as string))
+            else if (isTypeFound && dyna.tags != null && !string.IsNullOrEmpty(dyna.tags as string))
             {
 
                 string tsql = string.Empty;
