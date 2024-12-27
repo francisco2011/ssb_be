@@ -412,3 +412,31 @@ FodyWeavers.xsd
 # Additional files built by Visual Studio
 
 # End of https://www.toptal.com/developers/gitignore/api/visualstudio,dotnetcore
+/ss_blog_be/bin/Debug/net8.0/ss_blog_be.deps.json
+/.vs/ss_blog_be/v17/.suo
+/.vs/ss_blog_be/v17/DocumentLayout.backup.json
+/.vs/ss_blog_be/v17/DocumentLayout.json
+/.vs/ss_blog_be/DesignTimeBuild/.dtbcache.v2
+/ss_blog_be/bin/Debug/net8.0/ss_blog_be.dll
+/ss_blog_be/bin/Debug/net8.0/ss_blog_be.exe
+/ss_blog_be/bin/Debug/net8.0/ss_blog_be.pdb
+/ss_blog_be/bin/Debug/net8.0/ss_blog_be.runtimeconfig.json
+/ss_blog_be/obj/Debug/net8.0/ref/ss_blog_be.dll
+/ss_blog_be/obj/Debug/net8.0/refint/ss_blog_be.dll
+/ss_blog_be/obj/Debug/net8.0/staticwebassets/msbuild.build.ss_blog_be.props
+/ss_blog_be/obj/Debug/net8.0/apphost.exe
+/ss_blog_be/obj/Debug/net8.0/ss_blog_be.AssemblyInfo.cs
+/ss_blog_be/obj/Debug/net8.0/ss_blog_be.AssemblyInfoInputs.cache
+/ss_blog_be/obj/Debug/net8.0/ss_blog_be.assets.cache
+/ss_blog_be/obj/Debug/net8.0/ss_blog_be.csproj.AssemblyReference.cache
+/ss_blog_be/obj/Debug/net8.0/ss_blog_be.csproj.CoreCompileInputs.cache
+/ss_blog_be/obj/Debug/net8.0/ss_blog_be.csproj.FileListAbsolute.txt
+/ss_blog_be/obj/Debug/net8.0/ss_blog_be.dll
+/ss_blog_be/obj/Debug/net8.0/ss_blog_be.GeneratedMSBuildEditorConfig.editorconfig
+/ss_blog_be/obj/Debug/net8.0/ss_blog_be.genruntimeconfig.cache
+/ss_blog_be/obj/Debug/net8.0/ss_blog_be.pdb
+/ss_blog_be/obj/Debug/net8.0/staticwebassets.build.json
+/ss_blog_be/obj/project.assets.json
+/ss_blog_be/obj/project.nuget.cache
+/ss_blog_be/obj/ss_blog_be.csproj.nuget.dgspec.json
+/ss_blog_be/obj/ss_blog_be.csproj.nuget.g.props
