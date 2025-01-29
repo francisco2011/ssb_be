@@ -72,6 +72,17 @@ postApi.MapPost("/{id}/contentType/{contentTypeId}", async ([FromRoute] int id, 
     return Results.Ok(result);
 }).DisableAntiforgery();
 
+postApi.MapPut("/{id}/content/{fileName}", async ([FromRoute] int id, [FromRoute] string fileName, [FromForm] IFormFile file) =>
+{
+    var stream = file.OpenReadStream();
+    var type = file.ContentType;
+
+    PostDataService dataService = new PostDataService(new ConnectionBuilder().Connect(), new StorageService());
+    var result = await dataService.UpdateContent(id, stream, type, fileName);
+
+    return Results.Ok(result);
+}).DisableAntiforgery();
+
 var tagsApi = app.MapGroup("/tags");
 
 tagsApi.MapGet("", async ([FromQuery] int? postTypeId) =>

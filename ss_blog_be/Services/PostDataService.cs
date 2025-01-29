@@ -10,6 +10,8 @@ using System.Reflection;
 using System.Data.SqlTypes;
 using System.Linq;
 using static System.Runtime.InteropServices.JavaScript.JSType;
+using Microsoft.Net.Http.Headers;
+using Amazon.S3.Model;
 [module: DapperAot]
 
 namespace ss_blog_be.Services
@@ -25,6 +27,14 @@ namespace ss_blog_be.Services
             _storageService = storageService;
 
         }
+
+        public async Task<ContentModel> UpdateContent(int id, Stream content, string mimeType, string fileName)
+        {
+            var stgService = new StorageService();
+            var result = await stgService.UploadFileAsync(content, mimeType, fileName, null);
+            return result;
+
+        } 
 
         public async Task<ContentModel> SaveContent(int id, Stream content, string mimeType, ContentType contentType)
         {
@@ -325,10 +335,10 @@ namespace ss_blog_be.Services
 
             // TODO:  CHANGE FOR SOMETHING SMARTER
             // MAYBE TELL THE FE WHAT IT IS SPECTING
-            if(postTypeId.HasValue && ( postTypeId.Value == 5 || postTypeId.Value == 4))
-            {
-                q.From("post").Select("content");
-            }
+            //if(postTypeId.HasValue && ( postTypeId.Value == 5 || postTypeId.Value == 4))
+            //{
+            //    q.From("post").Select("content");
+            //}
 
             if (published.HasValue)
             {
@@ -369,10 +379,10 @@ namespace ss_blog_be.Services
             foreach ( var dynb in dyna)
             {
                 var titleOriginal = (dynb.title as string).FromBase64();
-                var descriptionOriginal = (dynb.description as string).FromBase64();
+                var descriptionOriginal = dynb.description is string ? (dynb.description as string).FromBase64() : null;
                 long isPublished = dynb.isPublished;
                 var createdAt = new DateTime(dynb.createdAtTicks);
-                var content = DynamicExtensions.HasProperty(dynb, "content") && dynb.content != null ? (dynb.content as string).FromBase64() : string.Empty;
+                //var content = DynamicExtensions.HasProperty(dynb, "content") && dynb.content != null ? (dynb.content as string).FromBase64() : string.Empty;
                 var canLoadType = dynb.typeId is long;
                 
 
@@ -384,7 +394,7 @@ namespace ss_blog_be.Services
                     IsPublished = isPublished.ToBool(),
                     Tags = [],
                     CreatedAt = createdAt,
-                    Content = content,
+                    //Content = content,
                     Type = canLoadType ? new PostTypeModel() { Id = dynb.typeId, Name = dynb.typeName } : null,
                 };
 
@@ -450,7 +460,7 @@ namespace ss_blog_be.Services
 
             var titleOriginal = (firstE.title as string).FromBase64();
             var contentOriginal = (firstE.Content as string).FromBase64();
-            var descriptionOriginal = (firstE.Description as string).FromBase64();
+            var descriptionOriginal = firstE.description is string ? (firstE.description as string).FromBase64() : string.Empty.ToBase64() ;
             long isPublished = firstE.IsPublished;
             var canLoadType = firstE.typeId is long;
 
