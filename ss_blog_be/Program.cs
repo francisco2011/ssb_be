@@ -34,7 +34,7 @@ postApi.MapPost("/", async (PostModel newModel) =>
 
 postApi.MapDelete("/{id}", async ([FromRoute] long id) =>
 {
-    PostDataService dataService = new PostDataService(new ConnectionBuilder().Connect(), new StorageService());
+    PostService dataService = new PostService(new ConnectionBuilder().Connect(), new StorageService());
     await dataService.Delete(id);
 
     return Results.NoContent();
@@ -62,12 +62,6 @@ postApi.MapGet("/{id}", async ([FromRoute] int id) =>
     return Results.Ok(result);
 });
 
-postApi.MapPost("/{id}/tags", async ([FromBody] TagsModel model, [FromRoute] long id) =>
-{
-    PostDataService dataService = new PostDataService(new ConnectionBuilder().Connect(), new StorageService());
-    //await dataService.AddTags(id, model);
-    return Results.NoContent();
-});
 
 postApi.MapPost("/{id}/contentType/{contentTypeId}", async ([FromRoute] int id, [FromRoute] ContentType contentTypeId, [FromForm] IFormFile file) =>
 {
@@ -95,9 +89,16 @@ var tagsApi = app.MapGroup("/tags");
 
 tagsApi.MapGet("", async ([FromQuery] int? postTypeId) =>
 {
-    PostDataService dataService = new PostDataService(new ConnectionBuilder().Connect(), new StorageService());
+    TagService dataService = new TagService(new ConnectionBuilder().Connect());
     var result = await dataService.GetTags(postTypeId);
     return Results.Ok(result);
+});
+
+tagsApi.MapPut("/{id}", async ([FromRoute] int id, [FromBody] TagUpdateModel model) =>
+{
+    TagService dataService = new TagService(new ConnectionBuilder().Connect());
+    await dataService.UpdateTags(id, model.tags);
+    return Results.NoContent();
 });
 
 var postTypeApi = app.MapGroup("/postType");
@@ -132,6 +133,7 @@ app.Run();
 [JsonSerializable(typeof(ContentModel))]
 [JsonSerializable(typeof(PaginationModel))]
 [JsonSerializable(typeof(PostResult))]
+[JsonSerializable(typeof(TagUpdateModel))]
 internal partial class AppJsonSerializerContext : JsonSerializerContext
 {
 

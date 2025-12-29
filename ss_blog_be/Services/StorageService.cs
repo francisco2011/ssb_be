@@ -21,7 +21,7 @@ namespace ss_blog_be.Services
 
         public StorageService()
         {
-            var awsCredentials = new Amazon.Runtime.BasicAWSCredentials("x", "x");
+
             client = new AmazonS3Client(awsCredentials, bucketRegion);
         }
 

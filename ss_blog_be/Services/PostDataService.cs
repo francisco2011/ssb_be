@@ -12,6 +12,7 @@ using System.Linq;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 using Microsoft.Net.Http.Headers;
 using Amazon.S3.Model;
+using System.Threading.Tasks;
 [module: DapperAot]
 
 namespace ss_blog_be.Services
@@ -195,11 +196,6 @@ namespace ss_blog_be.Services
                 throw new Exception("type is required");
             }
 
-            //if (model.Tags == null || model.Tags.Count == 0)
-            //{
-            //    throw new Exception("tags are required");
-            //}
-
             var sqlBuilder = new SQLBuilderS();
             var sqlQ = sqlBuilder.Init()
                         .From("post")
@@ -232,27 +228,7 @@ namespace ss_blog_be.Services
 
             await this._conn.ExecuteAsync(sql, model);
             
-            if (tags != null && isPublished.ToBool())
-            {
-                var contentAsStr = string.Join(" ", model.Tags);
-
-                string _sql = string.Empty;
-
-                if (model.Type.Id == 5)
-                {
-                    _sql = $"INSERT OR REPLACE INTO postFTS (rowid, tags, tagsCodeSnippets) VALUES ('{model.Id}', NULL ,'{contentAsStr}') Returning RowId";
-                }
-                else
-                {
-                    _sql = $"INSERT OR REPLACE INTO postFTS (rowid, tags, tagsCodeSnippets) VALUES ('{model.Id}', '{contentAsStr}', NULL) Returning RowId";
-
-                }
-
-
-                await this._conn.ExecuteAsync(_sql, model);
-            }
-
-
+            
         }
 
         private async Task<PostModel> Create(PostModel model)
@@ -271,33 +247,9 @@ namespace ss_blog_be.Services
             return model;
         }
 
+        
 
-        public async Task<IEnumerable<TagModel>> GetTags(int? postTypeId)
-        {
-            var sqlBuilder = new SQLBuilderS();
-            var sql = sqlBuilder.Init()
-                        .From("postFTS_v")
-                        .Select("term", "term")
-                        .Select("cnt", "ocurrences");
-
-            if (postTypeId.HasValue)
-            {
-                if (postTypeId.Value == 5)
-                {
-                    sql.Where("col", SQLBuilderOperatorsEnum.EQUAL, "'tagsCodeSnippets'");
-                }
-                else
-                {
-                    sql.Where("col", SQLBuilderOperatorsEnum.EQUAL, "'tags'");
-                }
-            }
-
-
-            var query = sql.Build();            
-            var result = await this._conn.QueryAsync<TagModel>(query);
-
-            return result.OrderByDescending(c => c.Ocurrences);
-        }
+        
 
         private async Task<PaginationModel> Count(int count, int offset, int? postTypeId, string[]? tags, bool? published)
         {
