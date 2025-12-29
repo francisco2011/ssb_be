@@ -1,11 +1,11 @@
-﻿using System.Numerics;
-using ss_blog_be.Common.SQLBuilder.Enums;
+﻿using ss_blog_be.Common.SQLBuilder.Enums;
 
 namespace ss_blog_be.Common.SQLBuilder
 {
     public interface ISQLQueryBuilderMain
     {
         ISQLQueryBuilderMain Init();
+        ISQLDeleteBuilder Delete();
         ISQLQueryBuilderTable From(string table, string? alias = null);
         ISQLQueryBuilderMain Join(string tableA, string tableB, string columnA, string columnB, SQLBuilderJoinTypeEnum joinType = SQLBuilderJoinTypeEnum.INNER);
         ISQLQueryBuilderMain Join(string tableA, string tableB, string columnA, string columnB, ISQLQueryBuilderMain subQuery, SQLBuilderJoinTypeEnum joinType = SQLBuilderJoinTypeEnum.INNER);
@@ -33,6 +33,19 @@ namespace ss_blog_be.Common.SQLBuilder
         ISQLQueryBuilderMain Offset(int value);
         ISQLQueryBuilderMain Distinct();
         void AsSubQuery();
+        string Build();
+    }
+
+    public interface ISQLDeleteBuilder
+    {
+
+        ISQLDeleteBuilder From(string table, string? alias = null);
+        ISQLDeleteBuilder Where(string column, SQLBuilderOperatorsEnum operatorC, string valueToCompare, SQLBuilderOperatorsEnum logicalOp = SQLBuilderOperatorsEnum.AND);
+        ISQLDeleteBuilder Where(string column, SQLBuilderOperatorsEnum operatorC, int valueToCompare, SQLBuilderOperatorsEnum logicalOp = SQLBuilderOperatorsEnum.AND);
+        ISQLDeleteBuilder Where(string column, SQLBuilderOperatorsEnum operatorC, long valueToCompare, SQLBuilderOperatorsEnum logicalOp = SQLBuilderOperatorsEnum.AND);
+        ISQLDeleteBuilder Where(string column, SQLBuilderOperatorsEnum operatorC, bool valueToCompare, SQLBuilderOperatorsEnum logicalOp = SQLBuilderOperatorsEnum.AND);
+        ISQLDeleteBuilder Join(string tableA, string tableB, string columnA, string columnB, SQLBuilderJoinTypeEnum joinType = SQLBuilderJoinTypeEnum.INNER);
+        ISQLDeleteBuilder Join(string tableA, string tableB, string columnA, string columnB, ISQLQueryBuilderTable subQuery, SQLBuilderJoinTypeEnum joinType = SQLBuilderJoinTypeEnum.INNER);
         string Build();
     }
 }

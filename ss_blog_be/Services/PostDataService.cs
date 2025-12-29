@@ -76,7 +76,45 @@ namespace ss_blog_be.Services
             return result;
         }
 
+        public async Task Delete(long id)
+        {
 
+            try
+            {
+                var __sqlBuilder = new SQLBuilderS();
+                var __sql = __sqlBuilder.Init()
+                            .Delete()
+                            .From("postFTS")
+                            .Where("ROWID", SQLBuilderOperatorsEnum.EQUAL, id)
+                            .Build();
+
+                await this._conn.ExecuteAsync(__sql);
+
+                var _sqlBuilder = new SQLBuilderS();
+                var _sql = _sqlBuilder.Init()
+                            .Delete()
+                            .From("content")
+                            .Where("postid", SQLBuilderOperatorsEnum.EQUAL, id)
+                            .Build();
+
+                await this._conn.ExecuteAsync(_sql);
+
+                var sqlBuilder = new SQLBuilderS();
+                var sql = sqlBuilder.Init()
+                            .Delete()
+                            .From("post")
+                            .Where("ROWID", SQLBuilderOperatorsEnum.EQUAL, id)
+                            .Build();
+
+                await this._conn.ExecuteAsync(sql);
+            }
+            catch (Exception ex)
+            {
+
+                throw;
+            }
+            
+        }
 
         public async Task ChangePublishState(long id)
         {

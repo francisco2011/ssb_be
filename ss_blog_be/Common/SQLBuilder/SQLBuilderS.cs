@@ -4,7 +4,7 @@ using ss_blog_be.Common.Extensions;
 
 namespace ss_blog_be.Common.SQLBuilder
 {
-    public class SQLBuilderS : ISQLQueryBuilderMain, ISQLQueryBuilderTable
+    public class SQLBuilderS : ISQLQueryBuilderMain, ISQLQueryBuilderTable, ISQLDeleteBuilder
     {
         SQLITOBuilderCoordinator _coordinator;
 
@@ -19,13 +19,18 @@ namespace ss_blog_be.Common.SQLBuilder
             return this;
         }
 
+        public ISQLDeleteBuilder Delete()
+        {
+            _coordinator.ASDelete();
+            return this;
+        }
+
         public string Build()
         {
             var result = _coordinator.Build();
             _coordinator.Clean();
             return result;
         }
-
 
         public ISQLQueryBuilderTable Select(string column, string? alias = null, SQLBuilderFunctions? function = null)
         {
@@ -139,5 +144,49 @@ namespace ss_blog_be.Common.SQLBuilder
         {
             _coordinator.SetAsSubQuery();
         }
+
+        public ISQLDeleteBuilder From(string table, string? alias = null)
+        {
+            _coordinator.SetTableMap(table, alias);
+            return this;
+        }
+
+        ISQLDeleteBuilder ISQLDeleteBuilder.Where(string column, SQLBuilderOperatorsEnum operatorC, string valueToCompare, SQLBuilderOperatorsEnum logicalOp)
+        {
+            _coordinator.AddWhere(column, operatorC, valueToCompare.ToString(), logicalOp);
+            return this;
+        }
+
+        ISQLDeleteBuilder ISQLDeleteBuilder.Where(string column, SQLBuilderOperatorsEnum operatorC, int valueToCompare, SQLBuilderOperatorsEnum logicalOp)
+        {
+            _coordinator.AddWhere(column, operatorC, valueToCompare.ToString(), logicalOp);
+            return this;
+        }
+
+        ISQLDeleteBuilder ISQLDeleteBuilder.Where(string column, SQLBuilderOperatorsEnum operatorC, long valueToCompare, SQLBuilderOperatorsEnum logicalOp)
+        {
+            _coordinator.AddWhere(column, operatorC, valueToCompare.ToString(), logicalOp);
+            return this;
+        }
+
+        ISQLDeleteBuilder ISQLDeleteBuilder.Where(string column, SQLBuilderOperatorsEnum operatorC, bool valueToCompare, SQLBuilderOperatorsEnum logicalOp)
+        {
+            _coordinator.AddWhere(column, operatorC, valueToCompare.ToString(), logicalOp);
+            return this;
+        }
+
+        ISQLDeleteBuilder ISQLDeleteBuilder.Join(string tableA, string tableB, string columnA, string columnB, SQLBuilderJoinTypeEnum joinType)
+        {
+            _coordinator.AddJoin(tableA, tableB, columnA, columnB, joinType);
+            return this;
+        }
+
+        ISQLDeleteBuilder ISQLDeleteBuilder.Join(string tableA, string tableB, string columnA, string columnB, ISQLQueryBuilderTable subQuery, SQLBuilderJoinTypeEnum joinType)
+        {
+            _coordinator.AddJoin(tableA, tableB, columnA, columnB, subQuery as ISQLQueryBuilderMain, joinType);
+            return this;
+        }
+
+        
     }
 }

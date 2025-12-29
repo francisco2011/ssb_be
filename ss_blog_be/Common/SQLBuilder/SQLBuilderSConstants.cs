@@ -13,6 +13,7 @@
         public static string AS = " AS ";
         public static string NULL = " NULL ";
         public static string ON = " ON ";
+        public static string DELETE = "DELETE ";
 
     }
 }

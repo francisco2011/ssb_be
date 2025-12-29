@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.DataProtection.KeyManagement;
 using ss_blog_be.Models;
 using System.Collections.Generic;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Security.AccessControl;
 
 namespace ss_blog_be.Services
@@ -16,12 +17,12 @@ namespace ss_blog_be.Services
         private const string bucketName = "blg-cntnt-sb";
         private const string bucketNameStaging = "blg-cntnt-sb-staging";
         private static readonly RegionEndpoint bucketRegion = RegionEndpoint.CACentral1;
-        private static IAmazonS3 s3Client;
+        private static IAmazonS3 client = null;
 
         public StorageService()
         {
             var awsCredentials = new Amazon.Runtime.BasicAWSCredentials("x", "x");
-            s3Client = new AmazonS3Client(awsCredentials, bucketRegion);
+            client = new AmazonS3Client(awsCredentials, bucketRegion);
         }
 
         public async Task MoveFilesFromStagingToMain(ICollection<string> files)
@@ -41,7 +42,7 @@ namespace ss_blog_be.Services
                         DestinationKey = c,//Put archive folder path here
                     };
 
-                    return s3Client.CopyObjectAsync(copyFileRequest);
+                    return client.CopyObjectAsync(copyFileRequest);
                     
                 });
 
@@ -49,7 +50,7 @@ namespace ss_blog_be.Services
 
                 var allDeleteReq = files.Select(c =>
                 {
-                    return s3Client.DeleteObjectAsync(bucketNameStaging, c);
+                    return client.DeleteObjectAsync(bucketNameStaging, c);
                 });
 
                 await Task.WhenAll(allDeleteReq);
@@ -83,7 +84,7 @@ namespace ss_blog_be.Services
                 }
 
                 using (TransferUtility tranUtility =
-                new TransferUtility(s3Client))
+                new TransferUtility(client))
                 {
                     await tranUtility.UploadAsync(uploadRequest);
 
@@ -114,7 +115,7 @@ namespace ss_blog_be.Services
                         Expires = DateTime.Now.AddMinutes(5),
                         Verb = HttpVerb.PUT
                     };
-                    urlString = await s3Client.GetPreSignedURLAsync(request1);
+                    urlString = await client.GetPreSignedURLAsync(request1);
                 }
                 catch (AmazonS3Exception e)
                 {
@@ -165,7 +166,7 @@ namespace ss_blog_be.Services
                     Expires = DateTime.Now.AddMinutes(5),
                     Verb = HttpVerb.GET
                 };
-                urlString = await s3Client.GetPreSignedURLAsync(request1);
+                urlString = await client.GetPreSignedURLAsync(request1);
             }
             catch (AmazonS3Exception e)
             {
@@ -176,22 +177,6 @@ namespace ss_blog_be.Services
                 Console.WriteLine("Unknown encountered on server. Message:'{0}' when writing an object", e.Message);
             }
             return new ContentModel() { Name = objectName, Url = urlString };
-
-        }
-
-        public async Task DeleteObjectsWith(IDictionary<string, string> tags)
-        {
-            if (tags == null || !tags.Any()) return;
-
-            
-            var _tags = tags.Select(c => new Tag() { Key = c.Key, Value = c.Value }).ToList();
-
-
-            //var deleteObjectRequest = new DeleteObjectsRequest
-            //{
-            //    BucketName = bucketName,
-            //    Key = objectName
-            //};
 
         }
 
@@ -209,7 +194,7 @@ namespace ss_blog_be.Services
                 };
 
                 Console.WriteLine("Deleting an object");
-                await s3Client.DeleteObjectAsync(deleteObjectRequest);
+                await client.DeleteObjectAsync(deleteObjectRequest);
             }
             catch (AmazonS3Exception e)
             {
@@ -220,6 +205,25 @@ namespace ss_blog_be.Services
                 Console.WriteLine("Unknown encountered on server. Message:'{0}' when writing an object", e.Message);
             }
 
+        }
+
+        public static async Task ListingObjectsAsync(int count, int offset)
+        {
+            var listObjectsV2Paginator = client.Paginators.ListObjectsV2(new ListObjectsV2Request
+            {
+                BucketName = bucketName,
+                //MaxKeys = take
+            });
+
+            await foreach (var response in listObjectsV2Paginator.Responses)
+            {
+                Console.WriteLine($"HttpStatusCode: {response.HttpStatusCode}");
+                Console.WriteLine($"Number of Keys: {response.KeyCount}");
+                foreach (var entry in response.S3Objects)
+                {
+                    Console.WriteLine($"Key = {entry.Key} Size = {entry.Size}");
+                }
+            }
         }
 
     }

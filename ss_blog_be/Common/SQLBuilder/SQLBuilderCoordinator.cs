@@ -7,17 +7,18 @@ namespace ss_blog_be.Common.SQLBuilder
 {
     public class SQLITOBuilderCoordinator
     {
-        bool _asSubQuery; 
+        bool _asSubQuery;
+        bool _asDelete;
 
         SQLBuilderTableMap _firstTableDeclared;
         SQLBuilderTableMap _currentTable;
         SQLBuilderColumnMap _currentColumn;
 
-        [Required] private StringBuilder _stringBuilder;
+        private StringBuilder _stringBuilder;
 
-        [Required] private IDictionary<string, SQLBuilderTableMap> _tableMaps;
+        private IDictionary<string, SQLBuilderTableMap> _tableMaps;
 
-        [Required] private ICollection<JoinClause> _Joins;
+        private ICollection<JoinClause> _Joins;
 
         private int? _offSet;
         private int? _limit;
@@ -28,6 +29,7 @@ namespace ss_blog_be.Common.SQLBuilder
             _tableMaps = new Dictionary<string, SQLBuilderTableMap>();
             _Joins = new HashSet<JoinClause>();
             _asSubQuery = false;
+            _asDelete = false;
         }
 
         public void Init()
@@ -86,8 +88,17 @@ namespace ss_blog_be.Common.SQLBuilder
             _currentColumn.WhereClauses.Add(new WhereClause() { LogicalOp = operatorC, Value = valueToCompare, AggregationOp = aggregationOp });            
         }
 
+        //DELETE FROM table_name WHERE condition;
+        public void ASDelete()
+        {
+            _asDelete = true;
+            
+        }
+
         public void AddSelect(string column, string? alias = null, SQLBuilderFunctions? function = null)
         {
+            if (_asDelete) if (_currentTable == null) throw new SQLBuilderException("Delete mode doesnt allow select"); 
+
             SetColumn(column, alias, true);
 
             _currentColumn.IsSelected = true;
@@ -143,18 +154,30 @@ namespace ss_blog_be.Common.SQLBuilder
 
         public string Build() 
         {
-            if (_asSubQuery) _stringBuilder.Append("(");
-            _stringBuilder.Append(SQLBuilderSConstants.SELECT);
-            
-            buildSelect();
-            buildFrom();
-            buildJoins();
-            buildWhere();
-            addLimit();
-            addOFFSet();
+            if (_asDelete)
+            {
+                _stringBuilder.Append(SQLBuilderSConstants.DELETE);
+                buildFrom();
+                buildJoins();
+                buildWhere();
+            }
+            else
+            {
+                if (_asSubQuery) _stringBuilder.Append("(");
+                _stringBuilder.Append(SQLBuilderSConstants.SELECT);
 
-            if (_asSubQuery) _stringBuilder.Append(")");
-            if (!_asSubQuery) _stringBuilder.Append(";");
+                buildSelect();
+                buildFrom();
+                buildJoins();
+                buildWhere();
+                addLimit();
+                addOFFSet();
+
+                if (_asSubQuery) _stringBuilder.Append(")");
+                if (!_asSubQuery) _stringBuilder.Append(";");
+                
+            }
+
             return _stringBuilder.ToString();
         }
 

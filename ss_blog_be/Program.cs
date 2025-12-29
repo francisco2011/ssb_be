@@ -32,6 +32,14 @@ postApi.MapPost("/", async (PostModel newModel) =>
     return Results.Created($"/{result.Id}", result);
 });
 
+postApi.MapDelete("/{id}", async ([FromRoute] long id) =>
+{
+    PostDataService dataService = new PostDataService(new ConnectionBuilder().Connect(), new StorageService());
+    await dataService.Delete(id);
+
+    return Results.NoContent();
+});
+
 postApi.MapPut("/{id}/changePublishState", async ([FromRoute] long id) =>
 {
     PostDataService dataService = new PostDataService(new ConnectionBuilder().Connect(), new StorageService());
