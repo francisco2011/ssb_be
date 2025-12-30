@@ -42,16 +42,17 @@ postApi.MapDelete("/{id}", async ([FromRoute] long id) =>
 
 postApi.MapPut("/{id}/changePublishState", async ([FromRoute] long id) =>
 {
-    PostDataService dataService = new PostDataService(new ConnectionBuilder().Connect(), new StorageService());
-    await dataService.ChangePublishState(id);
+    
+    PostService service = new PostService(new ConnectionBuilder().Connect(), new StorageService());
+    await service.ChangePublishStatus(id);
 
     return Results.NoContent();
 });
 
-postApi.MapGet("/", async (HttpContext context, [FromQuery] int limit, [FromQuery] int offset, [FromQuery] int? typeId, [FromQuery] string[] tags, [FromQuery] bool? published) =>
+postApi.MapGet("/", async (HttpContext context, [FromQuery] int limit, [FromQuery] int offset, [FromQuery] int? typeId, [FromQuery] string[] tags, [FromQuery] bool? published, [FromQuery] bool? loadContent) =>
 {
     PostDataService dataService = new PostDataService(new ConnectionBuilder().Connect(), new StorageService());
-    var result = await dataService.List(limit, offset, typeId, tags, published);
+    var result = await dataService.List(limit, offset, typeId, tags, published, loadContent);
     return Results.Ok(result);
 });
 

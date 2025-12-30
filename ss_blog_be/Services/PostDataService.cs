@@ -6,13 +6,6 @@ using ss_blog_be.Common.SQLBuilder;
 using ss_blog_be.Common.SQLBuilder.Enums;
 using ss_blog_be.Types;
 using ss_blog_be.Common.Extensions;
-using System.Reflection;
-using System.Data.SqlTypes;
-using System.Linq;
-using static System.Runtime.InteropServices.JavaScript.JSType;
-using Microsoft.Net.Http.Headers;
-using Amazon.S3.Model;
-using System.Threading.Tasks;
 [module: DapperAot]
 
 namespace ss_blog_be.Services
@@ -117,7 +110,7 @@ namespace ss_blog_be.Services
             
         }
 
-        public async Task ChangePublishState(long id)
+        public async Task<PostModel> ChangePublishState(long id)
         {
             var sqlBuilder = new SQLBuilderS();
             var sql = sqlBuilder.Init()
@@ -136,6 +129,8 @@ namespace ss_blog_be.Services
 
             if (dyna == null) throw new Exception("Not found");
 
+            if (dyna.postfts_rowid == null) throw new Exception("Can not change the status of a post without type"); ;
+
             long isPublished = dyna.isPublished;
 
             bool newPublicationState = !isPublished.ToBool();
@@ -143,40 +138,13 @@ namespace ss_blog_be.Services
             string _sql = $"UPDATE post SET  isPublished = {newPublicationState.ToInt()} WHERE ROWID = {id}";
             await this._conn.ExecuteAsync(_sql);
 
-            if (dyna.postfts_rowid == null) return;
-
-            var isTypeFound = dyna.typeId is long && dyna.typeId != 0;
-
-            if (!newPublicationState)
+            return new PostModel()
             {
-                //string sqlDel = $"DELETE FROM postFTS WHERE ROWID = '{id}'";
-                //but why? is this redundant?
+                Id = id,
+                Type = new PostTypeModel() { Id = dyna.typeId },
+                IsPublished = newPublicationState
+            };
 
-                string sqlDelStep1 = $"INSERT OR REPLACE INTO postFTS (ROWID, tags, tagsCodeSnippets) VALUES ('{id}', NULL , NULL)";
-                await this._conn.ExecuteAsync(sqlDelStep1);
-
-                //string sqlDelStep2 = $"INSERT INTO postFTS(postFTS, rowid, tags, tagsCodeSnippets) VALUES('delete', {id},  NULL , NULL)";
-                //await this._conn.ExecuteAsync(sqlDelStep2);
-            }
-            else if (isTypeFound && dyna.tags != null && !string.IsNullOrEmpty(dyna.tags as string))
-            {
-
-                string tsql = string.Empty;
-
-                if (dyna.typeId == 5)
-                {
-                    tsql = $"INSERT OR REPLACE INTO postFTS (ROWID, tags, tagsCodeSnippets) VALUES ('{id}', NULL ,'{dyna.tagsCodeSnippets}')";
-                }
-                else
-                {
-                    tsql = $"INSERT OR REPLACE INTO postFTS (ROWID, tags, tagsCodeSnippets) VALUES ('{id}', '{dyna.tags}', NULL)";
-
-                }
-
-
-                await this._conn.ExecuteAsync(tsql);
-
-            }
         }
         public async Task<PostModel> Save(PostModel model)
         {
@@ -207,28 +175,14 @@ namespace ss_blog_be.Services
 
             if (dyna == null) throw new Exception("Not found");
 
-            long isPublished = dyna.isPublished;
             var b64title = !string.IsNullOrEmpty(model.Title) ? model.Title.ToBase64() : string.Empty.ToBase64();
             var b64Content = !string.IsNullOrEmpty(model.Content) ? model.Content.ToBase64() : string.Empty.ToBase64();
             var b64description = !string.IsNullOrEmpty(model.Description) ? model.Description.ToBase64() : string.Empty.ToBase64();
             var typeId = model.Type != null ? model.Type.Id.ToString() : "NULL";
-            var tags = model.Tags != null && model.Tags.Any() ? string.Join(" ", model.Tags) : null;
-
-            string sql = string.Empty;
-
-            if (model.Type.Id == 5)
-            {
-                    //_sql = $"UPDATE postFTS SET tagsCodeSnippets = '{contentAsStr}' WHERE rowid = '{model.Id}' ";
-                sql = $"UPDATE post SET title = '{b64title}', content = '{b64Content}', description = '{b64description}', typeId = {typeId}, tagsCodeSnippets = '{tags}' WHERE ROWID = {model.Id}";
-            }
-            else
-            {
-                sql = $"UPDATE post SET title = '{b64title}', content = '{b64Content}', description = '{b64description}', typeId = {typeId}, tags = '{tags}' WHERE ROWID = {model.Id}";
-            }
+            
+            string sql = $"UPDATE post SET title = '{b64title}', content = '{b64Content}', description = '{b64description}', typeId = {typeId} WHERE ROWID = {model.Id}";
 
             await this._conn.ExecuteAsync(sql, model);
-            
-            
         }
 
         private async Task<PostModel> Create(PostModel model)
@@ -236,7 +190,7 @@ namespace ss_blog_be.Services
             var b64Content = !string.IsNullOrEmpty(model.Content) ? model.Content.ToBase64() : string.Empty.ToBase64();
             var b64description = !string.IsNullOrEmpty(model.Description) ? model.Description.ToBase64() : string.Empty.ToBase64();
             var b64title = !string.IsNullOrEmpty(model.Title) ? model.Title : string.Empty.ToBase64();
-            var tags = model.Tags != null && model.Tags.Any() ? string.Join(" ", model.Tags) : "NULL";
+            var tags = model.Tags != null && model.Tags.Any() ? string.Join(" ", model.Tags) : "";
 
             var typeId = model.Type != null ? model.Type.Id.ToString() : "NULL";
 
@@ -285,7 +239,7 @@ namespace ss_blog_be.Services
             return new PaginationModel(count, offset, totalElements);
         }
 
-        public async Task<PostResult> List(int count, int offset, int? postTypeId, string[]? tags, bool? published)
+        public async Task<PostResult> List(int count, int offset, int? postTypeId, string[]? tags, bool? published, bool? loadContent)
         {
             var pag = new PaginationModel(count, offset);
 
@@ -325,10 +279,10 @@ namespace ss_blog_be.Services
 
             // TODO:  CHANGE FOR SOMETHING SMARTER
             // MAYBE TELL THE FE WHAT IT IS SPECTING
-            //if(postTypeId.HasValue && ( postTypeId.Value == 5 || postTypeId.Value == 4))
-            //{
-            //    q.From("post").Select("content");
-            //}
+            if(loadContent.HasValue && loadContent.Value)
+            {
+                q.From("post").Select("content");
+            }
 
             if (published.HasValue)
             {
@@ -372,7 +326,7 @@ namespace ss_blog_be.Services
                 var descriptionOriginal = dynb.description is string ? (dynb.description as string).FromBase64() : null;
                 long isPublished = dynb.isPublished;
                 var createdAt = new DateTime(dynb.createdAtTicks);
-                //var content = DynamicExtensions.HasProperty(dynb, "content") && dynb.content != null ? (dynb.content as string).FromBase64() : string.Empty;
+                var content = DynamicExtensions.HasProperty(dynb, "content") && dynb.content != null ? (dynb.content as string).FromBase64() : string.Empty;
                 var canLoadType = dynb.typeId is long;
                 
 
@@ -384,7 +338,7 @@ namespace ss_blog_be.Services
                     IsPublished = isPublished.ToBool(),
                     Tags = [],
                     CreatedAt = createdAt,
-                    //Content = content,
+                    Content = content,
                     Type = canLoadType ? new PostTypeModel() { Id = dynb.typeId, Name = dynb.typeName } : null,
                 };
 
