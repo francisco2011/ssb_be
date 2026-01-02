@@ -52,7 +52,7 @@ namespace ss_blog_be.Services
                 //nothing to do here 
                 if (string.IsNullOrEmpty(dyna.tagsCodeSnippets)) return;
 
-                _sql = $"UPDATE post SET tagsCodeSnippets = '', previousTags = {dyna.tagsCodeSnippets} WHERE ROWID = {id}";
+                _sql = $"UPDATE post SET tagsCodeSnippets = '', previousTags = '{dyna.tagsCodeSnippets}' WHERE ROWID = {id}";
 
                 //INSERT INTO ft(ft, rowid, a, b, c) VALUES('delete', 14, $a, $b, $c);
                 __sql = $"INSERT INTO postFTS (postFTS, rowid, tags, tagsCodeSnippets) VALUES ('delete', '{id}', NULL ,'{dyna.tagsCodeSnippets}')";
@@ -61,7 +61,7 @@ namespace ss_blog_be.Services
             {
                 //nothing to do here 
                 if (string.IsNullOrEmpty(dyna.tags)) return;
-                _sql = $"UPDATE post SET tags = '', , previousTags = {dyna.tags} WHERE ROWID = {id}";
+                _sql = $"UPDATE post SET tags = '',  previousTags = '{dyna.tags}' WHERE ROWID = {id}";
                 __sql = $"INSERT INTO postFTS (postFTS, rowid, tags, tagsCodeSnippets) VALUES ('delete', '{id}', '{dyna.tags}', NULL)";
             }
 
@@ -79,8 +79,7 @@ namespace ss_blog_be.Services
                     .From("post")
                     .Select("ROWID", "id")
                     .Select("isPublished")
-                    .Select("tags")
-                    .Select("tagsCodeSnippets")
+                    .Select("previousTags")
                     .Where("ROWID", SQLBuilderOperatorsEnum.EQUAL, id)
                     .From("postType", "type")
                     .Select("ROWID", "typeId")
@@ -96,20 +95,17 @@ namespace ss_blog_be.Services
             string _sql = string.Empty;
             string __sql = string.Empty;
 
+            if (string.IsNullOrEmpty(dyna.previousTags)) return;
 
             if (dyna.typeId == 5)
             {
-                //nothing to do here 
-                if (string.IsNullOrEmpty(dyna.tagsCodeSnippets)) return;
-                _sql = $"UPDATE post SET tagsCodeSnippets = '{dyna.tagsCodeSnippets}' WHERE ROWID = {id}";
-                __sql = $"INSERT OR REPLACE INTO postFTS (rowid, tags, tagsCodeSnippets) VALUES ('{id}', NULL ,'{dyna.tagsCodeSnippets}') Returning RowId";
+                _sql = $"UPDATE post SET tagsCodeSnippets = '{dyna.previousTags}' WHERE ROWID = {id}";
+                __sql = $"INSERT OR REPLACE INTO postFTS (rowid, tags, tagsCodeSnippets) VALUES ('{id}', NULL ,'{dyna.previousTags}') Returning RowId";
             }
             else
             {
-                //nothing to do here 
-                if (string.IsNullOrEmpty(dyna.tags)) return;
-                _sql = $"UPDATE post SET tags = '{dyna.tags}' WHERE ROWID = {id}";
-                __sql = $"INSERT OR REPLACE INTO postFTS (rowid, tags, tagsCodeSnippets) VALUES ('{id}', '{dyna.tags}', NULL) Returning RowId";
+                _sql = $"UPDATE post SET tags = '{dyna.previousTags}' WHERE ROWID = {id}";
+                __sql = $"INSERT OR REPLACE INTO postFTS (rowid, tags, tagsCodeSnippets) VALUES ('{id}', '{dyna.previousTags}', NULL) Returning RowId";
             }
 
             var result = await this._conn.ExecuteAsync(_sql);
