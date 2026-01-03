@@ -21,6 +21,7 @@ namespace ss_blog_be.Services
 
         public StorageService()
         {
+            
             client = new AmazonS3Client(awsCredentials, bucketRegion);
         }
 

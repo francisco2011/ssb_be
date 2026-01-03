@@ -95,7 +95,7 @@ namespace ss_blog_be.Services
             string _sql = string.Empty;
             string __sql = string.Empty;
 
-            if (string.IsNullOrEmpty(dyna.previousTags)) return;
+            if (Convert.IsDBNull(dyna.previousTags) || string.IsNullOrEmpty(dyna.previousTags)) return;
 
             if (dyna.typeId == 5)
             {
