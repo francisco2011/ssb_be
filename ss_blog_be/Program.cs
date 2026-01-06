@@ -121,12 +121,38 @@ contentApi.MapGet("/{name}", async ([FromRoute] string name) =>
     return Results.Ok(result);
 });
 
+var sectionApi = app.MapGroup("/section");
+
+sectionApi.MapPost("", async ([FromBody] SectionModel model) =>
+{
+    SectionService service = new SectionService(new ConnectionBuilder().Connect());
+    var result = await service.Save(model);
+
+    return Results.Ok(result);
+});
+
+sectionApi.MapPut("/{id}", async ([FromRoute] int id, [FromBody] SectionModel model) =>
+{
+    SectionService service = new SectionService(new ConnectionBuilder().Connect());
+    await service.Update(id, model);
+
+    return Results.NoContent();
+});
+
+sectionApi.MapGet("", async ([FromQuery] int limit, [FromQuery] int offset) =>
+{
+    SectionService dataService = new SectionService(new ConnectionBuilder().Connect());
+    var result = await dataService.List(limit, offset);
+    return Results.Ok(result);
+});
+
 
 app.Run();
 
 [JsonSerializable(typeof(IEnumerable<PostModel>))]
 [JsonSerializable(typeof(IEnumerable<TagModel>))]
 [JsonSerializable(typeof(IEnumerable<PostTypeModel>))]
+[JsonSerializable(typeof(IEnumerable<SectionModel>))]
 [JsonSerializable(typeof(PostModel))]
 [JsonSerializable(typeof(PostTypeModel))]
 [JsonSerializable(typeof(TagsModel))]
@@ -135,6 +161,8 @@ app.Run();
 [JsonSerializable(typeof(PaginationModel))]
 [JsonSerializable(typeof(PostResult))]
 [JsonSerializable(typeof(TagUpdateModel))]
+[JsonSerializable(typeof(SectionModel))]
+[JsonSerializable(typeof(SectionResult))]
 internal partial class AppJsonSerializerContext : JsonSerializerContext
 {
 

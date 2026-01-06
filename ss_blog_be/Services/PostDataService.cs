@@ -201,10 +201,6 @@ namespace ss_blog_be.Services
             return model;
         }
 
-        
-
-        
-
         private async Task<PaginationModel> Count(int count, int offset, int? postTypeId, string[]? tags, bool? published)
         {
             
