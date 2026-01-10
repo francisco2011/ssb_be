@@ -139,11 +139,26 @@ sectionApi.MapPut("/{id}", async ([FromRoute] int id, [FromBody] SectionModel mo
     return Results.NoContent();
 });
 
-sectionApi.MapGet("", async ([FromQuery] int limit, [FromQuery] int offset) =>
+sectionApi.MapGet("", async ([FromQuery] int limit, [FromQuery] int offset, [FromQuery] string[] tags, [FromQuery]bool? includeContent) =>
 {
     SectionService dataService = new SectionService(new ConnectionBuilder().Connect());
-    var result = await dataService.List(limit, offset);
+    var result = await dataService.List(limit, offset, tags, includeContent);
     return Results.Ok(result);
+});
+
+sectionApi.MapGet("/{id}", async ([FromRoute] int id) =>
+{
+    SectionService dataService = new SectionService(new ConnectionBuilder().Connect());
+    var result = await dataService.Get(id);
+    return Results.Ok(result);
+});
+
+sectionApi.MapDelete("/{id}", async ([FromRoute] int id) =>
+{
+    SectionService service = new SectionService(new ConnectionBuilder().Connect());
+    await service.Delete(id);
+
+    return Results.NoContent();
 });
 
 
