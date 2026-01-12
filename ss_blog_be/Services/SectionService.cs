@@ -35,9 +35,10 @@ namespace ss_blog_be.Services
             if (dyna == null) throw new Exception("Not found");
 
             var b64Content = !string.IsNullOrEmpty(model.Content) ? model.Content.ToBase64() : string.Empty.ToBase64();
-            var tag = !string.IsNullOrEmpty(dyna.tag as string) || (dyna.tag as string) == "{{}}" ?  "{{" + model.Name.Replace(" ", "_") + "}}" : dyna.tag;
+            var b64ContentHtml = !string.IsNullOrEmpty(model.ContentHtml) ? model.ContentHtml.ToBase64() : string.Empty.ToBase64();
+            var tag = string.IsNullOrEmpty(dyna.tag as string) || (dyna.tag as string) == "{{}}" ?  "{{" + model.Name.Replace(" ", "_") + "}}" : dyna.tag;
 
-            string _sql = $"UPDATE section SET content = '{b64Content}', name = '{model.Name}', tag = '{tag}' WHERE ROWID = {model.Id}";
+            string _sql = $"UPDATE section SET content = '{b64Content}', name = '{model.Name}', tag = '{tag}', contentHtml = '{b64ContentHtml}' WHERE ROWID = {model.Id}";
             await this._conn.ExecuteAsync(_sql);
 
         }
@@ -47,7 +48,7 @@ namespace ss_blog_be.Services
             var b64Content = !string.IsNullOrEmpty(model.Content) ? model.Content.ToBase64() : string.Empty.ToBase64();
             
             //INSERT INTO section (name, content, tag, modifiable) VALUES ('title', '', '{{title}}', 0);
-            string _sql = $"INSERT INTO section (name, content, tag, modifiable,createdAt) VALUES ('{model.Name}', '{model.Content}', '{""}', 1, {DateTime.Now.Ticks}) Returning RowId";
+            string _sql = $"INSERT INTO section (name, content, contentHtml, tag, modifiable,createdAt) VALUES ('{model.Name}', '{model.Content}', {""}, '{""}', 1, {DateTime.Now.Ticks}) Returning RowId";
             var id = await this._conn.ExecuteScalarAsync<int>(_sql, model);
 
             model.Id = id;
@@ -69,6 +70,7 @@ namespace ss_blog_be.Services
 
         public async Task<SectionResult> List(int count, int offset, string[] tags, bool? includeContent)
         {
+
             var pag = new PaginationModel(count, offset);
 
             if (count != 0)
@@ -86,7 +88,7 @@ namespace ss_blog_be.Services
                         .Select("tag", "tag")
                         .Select("modifiable", "modifiable");
 
-            if(includeContent.HasValue && includeContent.Value) q.Select("content", "content");
+            if(includeContent.HasValue && includeContent.Value) q.Select("content", "content").Select("contentHtml", "contentHtml");
             
             if (tags != null && tags.Any()) 
                 q.Where("tag", SQLBuilderOperatorsEnum.IN, "("+ string.Join(",",tags.Select(c => "'" + c + "'").ToArray()) +")");
@@ -109,8 +111,9 @@ namespace ss_blog_be.Services
                 var tag = dynb.tag;
                 var id = dynb.id;
                 var content = DynamicExtensions.HasProperty(dynb, "content") && !string.IsNullOrEmpty(dynb.content as string) ? (dynb.content as string).FromBase64() : string.Empty;
-                
-                result.Add(new SectionModel { Id = id, Name = name, Tag = tag, Modifiable = modifiable.ToBool(), Content = content });
+                var contentHtml = DynamicExtensions.HasProperty(dynb, "contentHtml") && !string.IsNullOrEmpty(dynb.contentHtml as string) ? (dynb.contentHtml as string).FromBase64() : string.Empty;
+
+                result.Add(new SectionModel { Id = id, Name = name, Tag = tag, Modifiable = modifiable.ToBool(), Content = content, ContentHtml = contentHtml });
                 
             }
 

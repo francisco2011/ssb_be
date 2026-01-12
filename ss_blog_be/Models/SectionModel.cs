@@ -7,6 +7,7 @@ namespace ss_blog_be.Models
         public long? Id { get; set; }
         public string Name { get; set; }
         public string Content { get; set; }
+        public string ContentHtml { get; set; }
         public string Tag { get; set; }
 
         [JsonIgnore]

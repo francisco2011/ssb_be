@@ -1,28 +1,46 @@
-﻿using Amazon;
-using Amazon.S3;
+﻿using Amazon.S3;
 using Amazon.S3.Model;
 using Amazon.S3.Transfer;
-using Microsoft.AspNetCore.DataProtection.KeyManagement;
 using ss_blog_be.Models;
-using System.Collections.Generic;
-using System.IO;
-using System.Runtime.CompilerServices;
-using System.Security.AccessControl;
 
-namespace ss_blog_be.Services
+namespace ss_blog_be.Storage
 {
     public class StorageService
     {
 
-        private const string bucketName = "blg-cntnt-sb";
+        //private const string bucketName = "blg-cntnt-sb";
         private const string bucketNameStaging = "blg-cntnt-sb-staging";
-        private static readonly RegionEndpoint bucketRegion = RegionEndpoint.CACentral1;
-        private static IAmazonS3 client = null;
+        //private static readonly RegionEndpoint bucketRegion = RegionEndpoint.CACentral1;
+        private IAmazonS3 client = null;
+        private StorageSettings Settings = null;
 
-        public StorageService()
+        public StorageService(StorageSettings settings)
         {
-            
-            client = new AmazonS3Client(awsCredentials, bucketRegion);
+            Settings = settings;
+
+
+            var config = new AmazonS3Config
+            {
+                
+                 ServiceURL = settings.StorageUrl, // Your R2 endpoint,
+                 
+            //    RegionEndpoint = RegionEndpoint.USEast1,  // RegionEndpoint.USEast1, // Use a default region like USEast1
+            //     AuthenticationRegion = "auto", // R2 uses 'auto' region
+            //DisablePayloadSigning = true, // Must be true for R2 uploads
+            // DisableDefaultChecksumValidation = true // May be required
+            };
+
+            try
+            {
+
+                var awsCredentials = new Amazon.Runtime.BasicAWSCredentials(settings.StorageAccessKeyId, settings.StorageAccessKey);
+                client = new AmazonS3Client(awsCredentials, config);
+            }
+            catch(Exception e)
+            {
+                var a = 1;
+            }
+
         }
 
         public async Task MoveFilesFromStagingToMain(ICollection<string> files)
@@ -38,12 +56,12 @@ namespace ss_blog_be.Services
                     {
                         SourceBucket = bucketNameStaging,
                         SourceKey = c,
-                        DestinationBucket = bucketName,
+                        DestinationBucket = Settings.MainBucket,
                         DestinationKey = c,//Put archive folder path here
                     };
 
                     return client.CopyObjectAsync(copyFileRequest);
-                    
+
                 });
 
                 await Task.WhenAll(allCopyRequests);
@@ -73,15 +91,18 @@ namespace ss_blog_be.Services
             {
                 var uploadRequest = new TransferUtilityUploadRequest
                 {
-                    BucketName = bucketName,
+                    BucketName = Settings.MainBucket,
                     Key = fileName,
-                    InputStream = file
+                    InputStream = file,
+                    DisablePayloadSigning = true, //required by r2 on 2026-01-11
+                    DisableDefaultChecksumValidation = true //required by r2 on 2026-01-11
                 };
 
-                if(tags != null && tags.Any())
-                {
-                    uploadRequest.TagSet = tags.Select(c => new Tag() { Key = c.Key, Value = c.Value }).ToList();
-                }
+                //not supported by r2 on 2026-01-11
+                //if (tags != null && tags.Any())
+                //{
+                //    uploadRequest.TagSet = tags.Select(c => new Tag() { Key = c.Key, Value = c.Value }).ToList();
+                //}
 
                 using (TransferUtility tranUtility =
                 new TransferUtility(client))
@@ -90,7 +111,7 @@ namespace ss_blog_be.Services
 
                 }
 
-                return await GenerateDownloadUrl(fileName, bucketName);
+                return await GenerateDownloadUrl(fileName, Settings.MainBucket);
             }
             catch (Exception ex)
             {
@@ -100,61 +121,65 @@ namespace ss_blog_be.Services
 
         private async Task<ContentModel> GenerateUploadUrl(ContentModel model)
         {
-            
+
             var id = Guid.NewGuid();
             model.Name = id + "_" + model.Name;
 
-                string urlString = "";
-                try
+            string urlString = "";
+            try
+            {
+                GetPreSignedUrlRequest request1 = new GetPreSignedUrlRequest
                 {
-                    GetPreSignedUrlRequest request1 = new GetPreSignedUrlRequest
-                    {
-                        BucketName = bucketNameStaging,
-                        ContentType = model.MimeType,
-                        Key = model.Name,
-                        Expires = DateTime.Now.AddMinutes(5),
-                        Verb = HttpVerb.PUT
-                    };
-                    urlString = await client.GetPreSignedURLAsync(request1);
-                }
-                catch (AmazonS3Exception e)
-                {
-                    Console.WriteLine("Error encountered on server. Message:'{0}' when writing an object", e.Message);
-                }
-                catch (Exception e)
-                {
-                    Console.WriteLine("Unknown encountered on server. Message:'{0}' when writing an object", e.Message);
-                }
-                model.Url = urlString;
+                    BucketName = bucketNameStaging,
+                    ContentType = model.MimeType,
+                    Key = model.Name,
+                    Expires = DateTime.Now.AddMinutes(5),
+                    Verb = HttpVerb.PUT
+                };
+                urlString = await client.GetPreSignedURLAsync(request1);
+            }
+            catch (AmazonS3Exception e)
+            {
+                Console.WriteLine("Error encountered on server. Message:'{0}' when writing an object", e.Message);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("Unknown encountered on server. Message:'{0}' when writing an object", e.Message);
+            }
+            model.Url = urlString;
             return model;
         }
 
         public async Task<ContentModel> GenerateDownloadUrlMainStorage(string objectName)
         {
-            return await GenerateDownloadUrl(objectName, bucketName);
+            return await GenerateDownloadUrl(objectName, Settings.MainBucket);
         }
 
         public async Task<ICollection<ContentModel>> GenerateDownloadUrls(string[] objectNames)
         {
             if (objectNames.Length == 0) return [];
 
-            var allUrls = objectNames.Select(c => GenerateDownloadUrl(c, bucketName));   
+            var allUrls = objectNames.Select(c => GenerateDownloadUrl(c, Settings.MainBucket));
 
             return await Task.WhenAll(allUrls);
-            
+
         }
 
         public async Task<ContentModel> GenerateDownloadUrl(string objectName)
         {
             if (string.IsNullOrEmpty(objectName)) return null;
 
-            return await GenerateDownloadUrl(objectName, bucketName);
+            return await GenerateDownloadUrl(objectName, Settings.MainBucket);
 
         }
 
-
         private async Task<ContentModel> GenerateDownloadUrl(string objectName, string bucket)
         {
+
+            if (!string.IsNullOrEmpty(Settings.PublicUrl))
+            {
+                return new ContentModel() { Name = objectName, Url = Settings.PublicUrl + "/" + objectName };
+            }
 
             string urlString = "";
             try
@@ -188,9 +213,9 @@ namespace ss_blog_be.Services
 
                 var deleteObjectRequest = new DeleteObjectRequest
                 {
-                    BucketName = bucketName,
+                    BucketName = Settings.MainBucket,
                     Key = objectName,
-                    
+
                 };
 
                 Console.WriteLine("Deleting an object");
@@ -205,25 +230,6 @@ namespace ss_blog_be.Services
                 Console.WriteLine("Unknown encountered on server. Message:'{0}' when writing an object", e.Message);
             }
 
-        }
-
-        public static async Task ListingObjectsAsync(int count, int offset)
-        {
-            var listObjectsV2Paginator = client.Paginators.ListObjectsV2(new ListObjectsV2Request
-            {
-                BucketName = bucketName,
-                //MaxKeys = take
-            });
-
-            await foreach (var response in listObjectsV2Paginator.Responses)
-            {
-                Console.WriteLine($"HttpStatusCode: {response.HttpStatusCode}");
-                Console.WriteLine($"Number of Keys: {response.KeyCount}");
-                foreach (var entry in response.S3Objects)
-                {
-                    Console.WriteLine($"Key = {entry.Key} Size = {entry.Size}");
-                }
-            }
         }
 
     }

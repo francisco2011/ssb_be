@@ -1,7 +1,9 @@
 using Dapper;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 using ss_blog_be.Models;
 using ss_blog_be.Services;
+using ss_blog_be.Storage;
 using ss_blog_be.Types;
 using System.Reflection;
 using System.Text.Json.Serialization;
@@ -15,6 +17,9 @@ builder.Services.ConfigureHttpJsonOptions(options =>
 
 builder.Services.AddCors();
 
+builder.Services.AddOptions<StorageSettings>()
+    .BindConfiguration("AppSettings:StorageSettings");
+
 var app = builder.Build();
 
 app.UseCors(builder => builder
@@ -24,63 +29,73 @@ app.UseCors(builder => builder
 );
 
 var postApi = app.MapGroup("/post");
-postApi.MapPost("/", async (PostModel newModel) => 
+postApi.MapPost("/", async (PostModel newModel, IOptions<StorageSettings> settingsAccessor) => 
 {
-    PostDataService dataService = new PostDataService(new ConnectionBuilder().Connect(), new StorageService());
+    PostDataService dataService = new PostDataService(new ConnectionBuilder().Connect(), new StorageService(settingsAccessor.Value));
     var result = await dataService.Save(newModel);
 
     return Results.Created($"/{result.Id}", result);
 });
 
-postApi.MapDelete("/{id}", async ([FromRoute] long id) =>
+postApi.MapPost("/{id}/clone", async ([FromRoute] int id, IOptions<StorageSettings> settingsAccessor) =>
 {
-    PostService dataService = new PostService(new ConnectionBuilder().Connect(), new StorageService());
+    PostService service = new PostService(new ConnectionBuilder().Connect(), new StorageService(settingsAccessor.Value));
+    var result = await  service.Clone(id);
+
+    return Results.Created($"/{result}", result);
+});
+
+postApi.MapDelete("/{id}", async ([FromRoute] long id, IOptions<StorageSettings> settingsAccessor) =>
+{
+    PostService dataService = new PostService(new ConnectionBuilder().Connect(), new StorageService(settingsAccessor.Value));
     await dataService.Delete(id);
 
     return Results.NoContent();
 });
 
-postApi.MapPut("/{id}/changePublishState", async ([FromRoute] long id) =>
+postApi.MapPut("/{id}/changePublishState", async ([FromRoute] long id, IOptions<StorageSettings> settingsAccessor) =>
 {
     
-    PostService service = new PostService(new ConnectionBuilder().Connect(), new StorageService());
+    PostService service = new PostService(new ConnectionBuilder().Connect(), new StorageService(settingsAccessor.Value));
     await service.ChangePublishStatus(id);
 
     return Results.NoContent();
 });
 
-postApi.MapGet("/", async (HttpContext context, [FromQuery] int limit, [FromQuery] int offset, [FromQuery] int? typeId, [FromQuery] string[] tags, [FromQuery] bool? published, [FromQuery] bool? loadContent) =>
+postApi.MapGet("/", async (HttpContext context, [FromQuery] int limit, [FromQuery] int offset, [FromQuery] int? typeId, [FromQuery] string[] tags, 
+                                                [FromQuery] bool? published, [FromQuery] bool? loadContent, IOptions<StorageSettings> settingsAccessor) =>
 {
-    PostDataService dataService = new PostDataService(new ConnectionBuilder().Connect(), new StorageService());
+    PostDataService dataService = new PostDataService(new ConnectionBuilder().Connect(), new StorageService(settingsAccessor.Value));
     var result = await dataService.List(limit, offset, typeId, tags, published, loadContent);
     return Results.Ok(result);
 });
 
-postApi.MapGet("/{id}", async ([FromRoute] int id) =>
+postApi.MapGet("/{id}", async ([FromRoute] int id, IOptions<StorageSettings> settingsAccessor) =>
 {
-    PostDataService dataService = new PostDataService(new ConnectionBuilder().Connect(), new StorageService());
+    PostDataService dataService = new PostDataService(new ConnectionBuilder().Connect(), new StorageService(settingsAccessor.Value));
     var result = await dataService.Get(id);
     return Results.Ok(result);
 });
 
 
-postApi.MapPost("/{id}/contentType/{contentTypeId}", async ([FromRoute] int id, [FromRoute] ContentType contentTypeId, [FromForm] IFormFile file) =>
+postApi.MapPost("/{id}/contentType/{contentTypeId}", async ([FromRoute] int id, [FromRoute] ContentType contentTypeId, 
+                                                            [FromForm] IFormFile file, IOptions<StorageSettings> settingsAccessor) =>
 {
     var stream = file.OpenReadStream();
     var type = file.ContentType;
 
-    PostDataService dataService = new PostDataService(new ConnectionBuilder().Connect(), new StorageService());
+    PostDataService dataService = new PostDataService(new ConnectionBuilder().Connect(), new StorageService(settingsAccessor.Value));
     var result = await dataService.SaveContent(id,stream,type, contentTypeId);
 
     return Results.Ok(result);
 }).DisableAntiforgery();
 
-postApi.MapPut("/{id}/content/{fileName}", async ([FromRoute] int id, [FromRoute] string fileName, [FromForm] IFormFile file) =>
+postApi.MapPut("/{id}/content/{fileName}", async ([FromRoute] int id, [FromRoute] string fileName, [FromForm] IFormFile file, IOptions<StorageSettings> settingsAccessor) =>
 {
     var stream = file.OpenReadStream();
     var type = file.ContentType;
 
-    PostDataService dataService = new PostDataService(new ConnectionBuilder().Connect(), new StorageService());
+    PostDataService dataService = new PostDataService(new ConnectionBuilder().Connect(), new StorageService(settingsAccessor.Value));
     var result = await dataService.UpdateContent(id, stream, type, fileName);
 
     return Results.Ok(result);
@@ -113,9 +128,9 @@ postTypeApi.MapGet("", async () =>
 
 var contentApi = app.MapGroup("/content");
 
-contentApi.MapGet("/{name}", async ([FromRoute] string name) =>
+contentApi.MapGet("/{name}", async ([FromRoute] string name, IOptions<StorageSettings> settingsAccessor) =>
 {
-    StorageService service = new StorageService();
+    StorageService service = new StorageService(settingsAccessor.Value);
     var result = await service.GenerateDownloadUrlMainStorage(name);
 
     return Results.Ok(result);

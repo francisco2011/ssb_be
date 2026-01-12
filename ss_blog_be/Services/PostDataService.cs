@@ -6,6 +6,7 @@ using ss_blog_be.Common.SQLBuilder;
 using ss_blog_be.Common.SQLBuilder.Enums;
 using ss_blog_be.Types;
 using ss_blog_be.Common.Extensions;
+using ss_blog_be.Storage;
 [module: DapperAot]
 
 namespace ss_blog_be.Services
@@ -24,8 +25,7 @@ namespace ss_blog_be.Services
 
         public async Task<ContentModel> UpdateContent(int id, Stream content, string mimeType, string fileName)
         {
-            var stgService = new StorageService();
-            var result = await stgService.UploadFileAsync(content, mimeType, fileName, null);
+            var result = await _storageService.UploadFileAsync(content, mimeType, fileName, null);
             return result;
 
         } 
@@ -34,8 +34,8 @@ namespace ss_blog_be.Services
         {
             var fileName = id.ToString() + "_" + contentType.ToString() + "_" + Guid.NewGuid().ToString();
 
-            // TODO: sent to DB ..
-            if(contentType == ContentType.preview)
+            // There can be only 1 preview and 1 render ....
+            if(contentType == ContentType.preview || contentType == ContentType.render)
             {
                 var sqlBuilder = new SQLBuilderS();
                 var sql = sqlBuilder.Init()
@@ -61,8 +61,7 @@ namespace ss_blog_be.Services
                 { "contentType", contentType.ToString() }
             };
 
-            var stgService = new StorageService();
-            var result = await stgService.UploadFileAsync(content, mimeType, fileName, tags);
+            var result = await _storageService.UploadFileAsync(content, mimeType, fileName, tags);
 
             string _sql = $"INSERT INTO content (postId, objId, type) VALUES ('{id}', '{fileName}', '{contentType}') Returning RowId";
             await this._conn.ExecuteAsync(_sql);
@@ -189,7 +188,7 @@ namespace ss_blog_be.Services
         {
             var b64Content = !string.IsNullOrEmpty(model.Content) ? model.Content.ToBase64() : string.Empty.ToBase64();
             var b64description = !string.IsNullOrEmpty(model.Description) ? model.Description.ToBase64() : string.Empty.ToBase64();
-            var b64title = !string.IsNullOrEmpty(model.Title) ? model.Title : string.Empty.ToBase64();
+            var b64title = !string.IsNullOrEmpty(model.Title) ? model.Title.ToBase64() : string.Empty.ToBase64();
             var tags = model.Tags != null && model.Tags.Any() ? string.Join(" ", model.Tags) : "";
 
             var typeId = model.Type != null ? model.Type.Id.ToString() : "NULL";
@@ -318,7 +317,7 @@ namespace ss_blog_be.Services
 
             foreach ( var dynb in dyna)
             {
-                var titleOriginal = (dynb.title as string).FromBase64();
+                var titleOriginal = string.IsNullOrEmpty(dynb.title)? string.Empty : (dynb.title as string).FromBase64();
                 var descriptionOriginal = dynb.description is string ? (dynb.description as string).FromBase64() : null;
                 long isPublished = dynb.isPublished;
                 var createdAt = new DateTime(dynb.createdAtTicks);

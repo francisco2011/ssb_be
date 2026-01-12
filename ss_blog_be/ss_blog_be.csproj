@@ -7,10 +7,11 @@
     <InvariantGlobalization>true</InvariantGlobalization>
     <PublishAot>true</PublishAot>
 	  <InterceptorsPreviewNamespaces>$(InterceptorsPreviewNamespaces);Dapper.AOT</InterceptorsPreviewNamespaces>
+    <EnableConfigurationBindingGenerator>true</EnableConfigurationBindingGenerator>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="AWSSDK.S3" Version="3.7.405.9" />
+    <PackageReference Include="AWSSDK.S3" Version="4.0.17" />
     <PackageReference Include="Dapper" Version="2.1.35" />
     <PackageReference Include="Dapper.AOT" Version="1.0.31" />
     <PackageReference Include="Microsoft.Data.Sqlite" Version="8.0.10" />

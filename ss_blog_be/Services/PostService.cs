@@ -1,4 +1,6 @@
-﻿using Microsoft.Data.Sqlite;
+﻿using Microsoft.AspNetCore.Mvc.ViewFeatures;
+using Microsoft.Data.Sqlite;
+using ss_blog_be.Storage;
 using System.ComponentModel.DataAnnotations;
 
 namespace ss_blog_be.Services
@@ -31,6 +33,15 @@ namespace ss_blog_be.Services
         {
             await postDataService.Delete(id);
             await tagservice.Rebuild();
+        }
+
+        public async Task<long> Clone(int id)
+        {
+            var original = await postDataService.Get(id);
+            original.Id = null;
+            var model = await postDataService.Save(original);
+            //will have a value since its a save operation LOL
+            return model.Id.Value;
         }
 
 
