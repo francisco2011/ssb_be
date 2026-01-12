@@ -440,3 +440,12 @@ FodyWeavers.xsd
 /ss_blog_be/obj/project.nuget.cache
 /ss_blog_be/obj/ss_blog_be.csproj.nuget.dgspec.json
 /ss_blog_be/obj/ss_blog_be.csproj.nuget.g.props
+/.vs/ss_blog_be/v17/.futdcache.v2
+/ss_blog_be/bin/Debug/net8.0/appsettings.json
+/ss_blog_be/bin/Debug/net8.0/AWSSDK.Core.dll
+/ss_blog_be/bin/Debug/net8.0/AWSSDK.S3.dll
+/ss_blog_be/obj/Release/net8.0/ss_blog_be.AssemblyInfo.cs
+/ss_blog_be/obj/Release/net8.0/ss_blog_be.AssemblyInfoInputs.cache
+/ss_blog_be/obj/Release/net8.0/ss_blog_be.assets.cache
+/ss_blog_be/obj/Release/net8.0/ss_blog_be.GeneratedMSBuildEditorConfig.editorconfig
+/ss_blog_be/appsettings.json
