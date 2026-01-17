@@ -7,6 +7,8 @@ namespace ss_blog_be.Types
     {
         preview = 0, 
         imgBody = 1,
-        render = 2
+        render = 2,
+        titleRender = 3,
+        descriptionRender = 4,
     }
 }

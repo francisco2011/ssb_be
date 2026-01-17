@@ -84,7 +84,7 @@ namespace ss_blog_be.Storage
 
 
 
-        public async Task<ContentModel> UploadFileAsync(Stream file, string mimeType, string fileName, IDictionary<string, string> tags = null)
+        public async Task<string> UploadFileAsync(Stream file, string mimeType, string fileName, IDictionary<string, string> tags = null)
         {
 
             try
@@ -150,12 +150,12 @@ namespace ss_blog_be.Storage
             return model;
         }
 
-        public async Task<ContentModel> GenerateDownloadUrlMainStorage(string objectName)
+        public async Task<string> GenerateDownloadUrlMainStorage(string objectName)
         {
             return await GenerateDownloadUrl(objectName, Settings.MainBucket);
         }
 
-        public async Task<ICollection<ContentModel>> GenerateDownloadUrls(string[] objectNames)
+        public async Task<ICollection<string>> GenerateDownloadUrls(string[] objectNames)
         {
             if (objectNames.Length == 0) return [];
 
@@ -165,7 +165,7 @@ namespace ss_blog_be.Storage
 
         }
 
-        public async Task<ContentModel> GenerateDownloadUrl(string objectName)
+        public async Task<string> GenerateDownloadUrl(string objectName)
         {
             if (string.IsNullOrEmpty(objectName)) return null;
 
@@ -173,12 +173,12 @@ namespace ss_blog_be.Storage
 
         }
 
-        private async Task<ContentModel> GenerateDownloadUrl(string objectName, string bucket)
+        private async Task<string> GenerateDownloadUrl(string objectName, string bucket)
         {
 
             if (!string.IsNullOrEmpty(Settings.PublicUrl))
             {
-                return new ContentModel() { Name = objectName, Url = Settings.PublicUrl + "/" + objectName };
+                return Settings.PublicUrl + "/" + objectName;
             }
 
             string urlString = "";
@@ -201,7 +201,7 @@ namespace ss_blog_be.Storage
             {
                 Console.WriteLine("Unknown encountered on server. Message:'{0}' when writing an object", e.Message);
             }
-            return new ContentModel() { Name = objectName, Url = urlString };
+            return urlString;
 
         }
 

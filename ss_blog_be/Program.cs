@@ -63,10 +63,10 @@ postApi.MapPut("/{id}/changePublishState", async ([FromRoute] long id, IOptions<
 });
 
 postApi.MapGet("/", async (HttpContext context, [FromQuery] int limit, [FromQuery] int offset, [FromQuery] int? typeId, [FromQuery] string[] tags, 
-                                                [FromQuery] bool? published, [FromQuery] bool? loadContent, IOptions<StorageSettings> settingsAccessor) =>
+                                                [FromQuery] bool? published, [FromQuery] ContentType[] contents, IOptions<StorageSettings> settingsAccessor) =>
 {
     PostDataService dataService = new PostDataService(new ConnectionBuilder().Connect(), new StorageService(settingsAccessor.Value));
-    var result = await dataService.List(limit, offset, typeId, tags, published, loadContent);
+    var result = await dataService.List(limit, offset, typeId, tags, published, contents);
     return Results.Ok(result);
 });
 

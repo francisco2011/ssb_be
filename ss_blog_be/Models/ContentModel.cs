@@ -8,5 +8,6 @@ namespace ss_blog_be.Models
         public ContentType Type { get; set; }
         public string? MimeType { get; set; }
         public string? Url { get; set; }
+        public int PostId { get; set; }
     }
 }
