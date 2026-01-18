@@ -72,6 +72,15 @@ namespace ss_blog_be.Common.SQLBuilder
             return this;
         }
 
+        public ISQLQueryBuilderTable Where(string column, SQLBuilderOperatorsEnum operatorC, int[] valueToCompare, SQLBuilderOperatorsEnum logicalOp = SQLBuilderOperatorsEnum.AND)
+        {
+
+            var val = "(" + string.Join(",", valueToCompare.Select(c =>c)) + ")";
+
+            _coordinator.AddWhere(column, operatorC, val, logicalOp);
+            return this;
+        }
+
         ISQLQueryBuilderTable ISQLQueryBuilderTable.From(string table, string? alias)
         {
             _coordinator.SetTableMap(table, alias);

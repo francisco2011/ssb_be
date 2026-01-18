@@ -65,7 +65,7 @@ namespace ss_blog_be.Services
 
             var url = await _storageService.UploadFileAsync(content, mimeType, fileName, tags);
 
-            string _sql = $"INSERT INTO content (postId, objId, type, name) VALUES ('{id}', '{fileName}', '{contentType}', '') Returning RowId";
+            string _sql = $"INSERT INTO content (postId, objId, type) VALUES ('{id}', '{fileName}', '{contentType}') Returning RowId";
             await this._conn.ExecuteAsync(_sql);
 
             return new ContentModel() { Name = fileName, Type = contentType, Url = url, PostId = id, MimeType = mimeType};
@@ -111,7 +111,7 @@ namespace ss_blog_be.Services
             
         }
 
-        public async Task<PostModel> ChangePublishState(long id)
+        public async Task<PostModel> ChangePublishState(int id)
         {
             var sqlBuilder = new SQLBuilderS();
             var sql = sqlBuilder.Init()
@@ -196,7 +196,7 @@ namespace ss_blog_be.Services
 
             var typeId = model.Type != null ? model.Type.Id.ToString() : "NULL";
 
-            string sql = $"INSERT INTO post (title, content, description, typeId, isPublished, createdAt, tags) VALUES ('{b64title}', '{b64Content}', '{b64description}', {typeId}, {false.ToInt()} ,{DateTime.Now.Ticks}, '{tags}') Returning RowId";
+            string sql = $"INSERT INTO post (title, content, description, typeId, isPublished, createdAt, tags, name) VALUES ('{b64title}', '{b64Content}', '{b64description}', {typeId}, {false.ToInt()} ,{DateTime.Now.Ticks}, '{tags}', '') Returning RowId";
             var id = await this._conn.ExecuteScalarAsync<int>(sql, model);
 
             model.Id = id;
@@ -315,14 +315,14 @@ namespace ss_blog_be.Services
                 //var content = DynamicExtensions.HasProperty(dynb, "content") && dynb.content != null ? (dynb.content as string).FromBase64() : string.Empty;
                 var canLoadType = dynb.typeId is long;
                 var name = dynb.name is string ? dynb.name as string : string.Empty;
-                
+                var id = dynb.id is long ? Convert.ToInt32(dynb.id) : 0;
 
                 var model = new PostModel()
                 {
                     Name = name,
                     //Title = titleOriginal,
                     //Description = descriptionOriginal,
-                    Id = dynb.id,
+                    Id = id,
                     IsPublished = isPublished.ToBool(),
                     Tags = [],
                     CreatedAt = createdAt,
@@ -357,9 +357,9 @@ namespace ss_blog_be.Services
             return new PostResult(result, pag);
         }
 
-        private async Task<ContentModel[]> getContentFor(long[] postIds, ContentType[] contentsToAdd)
+        private async Task<ContentModel[]> getContentFor(int[] postIds, ContentType[] contentsToAdd)
         {
-            var contents = new ContentModel[0];
+            var contents = new List<ContentModel>();
 
             if (contentsToAdd != null && contentsToAdd.Any())
             {
@@ -370,14 +370,26 @@ namespace ss_blog_be.Services
                         .Select("type", "type")
                         .Select("postId", "postId")
                         .Where("type", SQLBuilderOperatorsEnum.IN, contentsToAdd.Select(c => c.ToString()).ToArray())
-                        .Where("postId", SQLBuilderOperatorsEnum.IN, postIds.Select(c => c.ToString()).ToArray()).Build();
+                        .Where("postId", SQLBuilderOperatorsEnum.IN, postIds).Build();
 
-                contents = (await this._conn.QueryAsync<ContentModel>(sql)).ToArray();
+                 var contentsFromDb = (await this._conn.QueryAsync(sql)).ToArray();
 
-                foreach (var item in contents)
-                {
-                    item.Url = await _storageService.GenerateDownloadUrl(item.Name);
-                }
+                 foreach (var item in contentsFromDb)
+                 {
+                    var name = item.name is string ? item.name as string : string.Empty;
+                    var url = string.IsNullOrEmpty(name) ? string .Empty : await _storageService.GenerateDownloadUrl(name);
+                    var postId = Convert.ToInt32(DynamicExtensions.GetPropertyValueAs<long>(item, "postId", 0));
+
+                    ContentType type = default;
+
+                    if(Enum.TryParse(item.type as string, out ContentType _type))
+                    {
+                        type = _type;
+                    }
+
+
+                    contents.Add(new ContentModel() { Name = name, Url = url, Type = type, PostId = postId });
+                 }
             }
 
             return contents.ToArray();
@@ -389,6 +401,7 @@ namespace ss_blog_be.Services
             var sql = sqlBuilder.Init()
                         .From("post")
                         .Select("ROWID", "id")
+                        .Select("name")
                         .Select("title")
                         .Select("description")
                         .Select("createdAt", "createdAtTicks")
@@ -397,7 +410,7 @@ namespace ss_blog_be.Services
                         .Where("ROWID", SQLBuilderOperatorsEnum.EQUAL, id)
                         .From("postType", "type") 
                         .Select("ROWID", "typeId") 
-                        .Select("name")
+                        .Select("name", "typeName")
                         .Join("post", "postType", "typeId", "ROWID", SQLBuilderJoinTypeEnum.LEFT)
                         .From("postFTS")
                         .Select("tags")
@@ -415,29 +428,10 @@ namespace ss_blog_be.Services
 
             var firstE = dyna.FirstOrDefault();
 
-            var titleOriginal = (firstE.title as string).FromBase64();
-            var contentOriginal = (firstE.Content as string).FromBase64();
-            var descriptionOriginal = firstE.description is string ? (firstE.description as string).FromBase64() : string.Empty.ToBase64() ;
-            long isPublished = firstE.IsPublished;
-            var canLoadType = firstE.typeId is long;
+            if (firstE == null) throw new Exception("Not found");
 
-            var data = new PostModel
-            {
-                Id = firstE.Id,
-                Content = contentOriginal,
-                CreatedAt = new DateTime(firstE.createdAtTicks),
-                Description = descriptionOriginal,
-                Title = titleOriginal,
-                IsPublished =  isPublished.ToBool(),
-                Type = canLoadType ? new PostTypeModel()
-                {
-                    Id = firstE.typeId,
-                    Name = firstE.name,
-                } : null,
-                Tags = [],
-                Contents = new List<ContentModel>()
-                
-            };
+            PostModel data = PostModel.From(firstE);
+            var canLoadType = data.Type.Id != default;
 
             if (canLoadType)
             {

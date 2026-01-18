@@ -13,6 +13,8 @@ namespace ss_blog_be.Common.Extensions
 
         public static string FromBase64(this string str)
         {
+            if (string.IsNullOrEmpty(str)) return string.Empty;
+
             byte[] bytes = WebEncoders.Base64UrlDecode(str);
             return Encoding.UTF8.GetString(bytes);
         }

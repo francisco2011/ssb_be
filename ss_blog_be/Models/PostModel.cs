@@ -1,4 +1,5 @@
-﻿using System.Text.Json.Serialization;
+﻿using ss_blog_be.Common.Extensions;
+using System.Text.Json.Serialization;
 
 namespace ss_blog_be.Models
 {
@@ -9,7 +10,7 @@ namespace ss_blog_be.Models
         public string Content { get; set; }
         public string Description { get; set; }
         public PostTypeModel Type { get; set; }
-        public long? Id { get; set; }
+        public int? Id { get; set; }
 
         [JsonIgnore]
         public long createdAtTicks { get; set; }
@@ -22,6 +23,43 @@ namespace ss_blog_be.Models
         {
             CreatedAt = new DateTime(createdAtTicks);
             return this;
+        }
+
+        public static PostModel From(dynamic dym)
+        {
+            var model = new PostModel();
+
+            string name = DynamicExtensions.GetPropertyValueAs<string>(dym, "name", string.Empty);
+            string titleOriginal = DynamicExtensions.GetPropertyValueAs<string>(dym, "title", string.Empty);
+            string contentOriginal = DynamicExtensions.GetPropertyValueAs<string>(dym, "content", string.Empty);
+            string descriptionOriginal = DynamicExtensions.GetPropertyValueAs<string>(dym, "description", string.Empty);
+            var id = Convert.ToInt32(DynamicExtensions.GetPropertyValueAs<long>(dym, "id", 0));
+            long _isPublished = DynamicExtensions.GetPropertyValueAs<long>(dym, "isPublished", 0);
+            var isPublished = _isPublished.ToBool();
+            var createdAt = DynamicExtensions.GetAsDateTime(dym, "createdAtTicks", new DateTime());
+            var typeId = DynamicExtensions.GetPropertyValueAs<long>(dym, "typeId", 0);
+            string typeName = DynamicExtensions.GetPropertyValueAs<string>(dym, "typeName", string.Empty);
+
+            var canLoadType = dym.typeId is long;
+
+            return new PostModel
+            {
+                Id = id,
+                Name = name,
+                Content = contentOriginal.FromBase64(),
+                CreatedAt = createdAt,
+                Description = descriptionOriginal.FromBase64(),
+                Title = titleOriginal.FromBase64(),
+                IsPublished = isPublished,
+                Type = new PostTypeModel()
+                {
+                    Id = typeId,
+                    Name = typeName,
+                },
+                Tags = [],
+                Contents = new List<ContentModel>(),
+                
+            };
         }
     }
 

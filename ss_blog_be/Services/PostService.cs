@@ -15,7 +15,7 @@ namespace ss_blog_be.Services
             postDataService = new PostDataService(conn, storageService);
         }
 
-        public async Task ChangePublishStatus(long id)
+        public async Task ChangePublishStatus(int id)
         {
            var result = await postDataService.ChangePublishState(id);
             if (result.IsPublished)

@@ -45,7 +45,7 @@ postApi.MapPost("/{id}/clone", async ([FromRoute] int id, IOptions<StorageSettin
     return Results.Created($"/{result}", result);
 });
 
-postApi.MapDelete("/{id}", async ([FromRoute] long id, IOptions<StorageSettings> settingsAccessor) =>
+postApi.MapDelete("/{id}", async ([FromRoute] int id, IOptions<StorageSettings> settingsAccessor) =>
 {
     PostService dataService = new PostService(new ConnectionBuilder().Connect(), new StorageService(settingsAccessor.Value));
     await dataService.Delete(id);
@@ -53,7 +53,7 @@ postApi.MapDelete("/{id}", async ([FromRoute] long id, IOptions<StorageSettings>
     return Results.NoContent();
 });
 
-postApi.MapPut("/{id}/changePublishState", async ([FromRoute] long id, IOptions<StorageSettings> settingsAccessor) =>
+postApi.MapPut("/{id}/changePublishState", async ([FromRoute] int id, IOptions<StorageSettings> settingsAccessor) =>
 {
     
     PostService service = new PostService(new ConnectionBuilder().Connect(), new StorageService(settingsAccessor.Value));

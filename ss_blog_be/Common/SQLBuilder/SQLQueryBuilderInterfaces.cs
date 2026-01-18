@@ -28,6 +28,7 @@ namespace ss_blog_be.Common.SQLBuilder
         ISQLQueryBuilderTable Where(string column, SQLBuilderOperatorsEnum operatorC, long valueToCompare, SQLBuilderOperatorsEnum logicalOp = SQLBuilderOperatorsEnum.AND);
         ISQLQueryBuilderTable Where(string column, SQLBuilderOperatorsEnum operatorC, bool valueToCompare, SQLBuilderOperatorsEnum logicalOp = SQLBuilderOperatorsEnum.AND);
         ISQLQueryBuilderTable Where(string column, SQLBuilderOperatorsEnum operatorC, string[] valueToCompare, SQLBuilderOperatorsEnum logicalOp = SQLBuilderOperatorsEnum.AND);
+        ISQLQueryBuilderTable Where(string column, SQLBuilderOperatorsEnum operatorC, int[] valueToCompare, SQLBuilderOperatorsEnum logicalOp = SQLBuilderOperatorsEnum.AND);
         ISQLQueryBuilderMain Join(string tableA, string tableB, string columnA, string columnB, SQLBuilderJoinTypeEnum joinType = SQLBuilderJoinTypeEnum.INNER);
         ISQLQueryBuilderMain Join(string tableA, string tableB, string columnA, string columnB, ISQLQueryBuilderTable subQuery, SQLBuilderJoinTypeEnum joinType = SQLBuilderJoinTypeEnum.INNER);
         ISQLQueryBuilderMain Limit(int value);
