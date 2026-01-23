@@ -111,30 +111,9 @@ namespace ss_blog_be.Services
             
         }
 
-        public async Task<PostModel> ChangePublishState(int id)
+        public async Task<PostModel> ChangePublishState(int id, PostModel model)
         {
-            var sqlBuilder = new SQLBuilderS();
-            var sql = sqlBuilder.Init()
-                        .From("post")
-                        .Select("isPublished")
-                        .Select("tags")
-                        .Select("tagsCodeSnippets")
-                        .Select("typeId")
-                        .Where("ROWID", SQLBuilderOperatorsEnum.EQUAL, id)
-                        .From("postFTS")
-                        .Select("ROWID", "postfts_rowid")
-                        .Join("post", "postFTS", "ROWID", "rowid", SQLBuilderJoinTypeEnum.LEFT)
-                        .Build();
-
-            var dyna = (await this._conn.QueryFirstOrDefaultAsync(sql));
-
-            if (dyna == null) throw new Exception("Not found");
-
-            if (dyna.postfts_rowid == null) throw new Exception("Can not change the status of a post without type"); ;
-
-            long isPublished = dyna.isPublished;
-
-            bool newPublicationState = !isPublished.ToBool();
+            bool newPublicationState = !model.IsPublished;
 
             string _sql = $"UPDATE post SET  isPublished = {newPublicationState.ToInt()} WHERE ROWID = {id}";
             await this._conn.ExecuteAsync(_sql);
@@ -142,7 +121,7 @@ namespace ss_blog_be.Services
             return new PostModel()
             {
                 Id = id,
-                Type = new PostTypeModel() { Id = dyna.typeId },
+                Type = model.Type,
                 IsPublished = newPublicationState
             };
 
@@ -152,6 +131,7 @@ namespace ss_blog_be.Services
             if (model.Id.HasValue && model.Id.Value != 0)
             {
                 await Update(model);
+
                 return model;
             }
 
@@ -192,11 +172,10 @@ namespace ss_blog_be.Services
             var b64Content = !string.IsNullOrEmpty(model.Content) ? model.Content.ToBase64() : string.Empty.ToBase64();
             var b64description = !string.IsNullOrEmpty(model.Description) ? model.Description.ToBase64() : string.Empty.ToBase64();
             var b64title = !string.IsNullOrEmpty(model.Title) ? model.Title.ToBase64() : string.Empty.ToBase64();
-            var tags = model.Tags != null && model.Tags.Any() ? string.Join(" ", model.Tags) : "";
-
+            
             var typeId = model.Type != null ? model.Type.Id.ToString() : "NULL";
 
-            string sql = $"INSERT INTO post (title, content, description, typeId, isPublished, createdAt, tags, name) VALUES ('{b64title}', '{b64Content}', '{b64description}', {typeId}, {false.ToInt()} ,{DateTime.Now.Ticks}, '{tags}', '') Returning RowId";
+            string sql = $"INSERT INTO post (title, content, description, typeId, isPublished, createdAt, name) VALUES ('{b64title}', '{b64Content}', '{b64description}', {typeId}, {false.ToInt()} ,{DateTime.Now.Ticks}, '') Returning RowId";
             var id = await this._conn.ExecuteScalarAsync<int>(sql, model);
 
             model.Id = id;
@@ -223,18 +202,28 @@ namespace ss_blog_be.Services
                   .Where("typeId", SQLBuilderOperatorsEnum.EQUAL, postTypeId.Value);
             }
 
-            if (tags != null && tags.Length > 0)
+            if (postTypeId.HasValue)
             {
-                var tagsStr = string.Join(" ", tags);
 
-                q.From("postFTS")
+                var ftsTable = getFTSTableName(postTypeId.Value);
+                if (tags != null && tags.Length > 0)
+                {
+                    var tagsStr = string.Join(" ", tags);
+
+                    q.From(ftsTable)
                     .Where("postFTS", SQLBuilderOperatorsEnum.EQUAL, "'" + tagsStr + "'")
-                    .Join("post", "postFTS", "ROWID", "rowid");
+                    .Join("tags", ftsTable, "ROWID", "rowid");
+                }
             }
 
             var sql = q.Build();
             var totalElements = await this._conn.QuerySingleAsync<int>(sql);
             return new PaginationModel(count, offset, totalElements);
+        }
+
+        private string getFTSTableName(int postTypeId)
+        {
+            return "postFTS_" + postTypeId;
         }
 
         public async Task<PostResult> List(int count, int offset, int? postTypeId, string[]? tags, bool? published, ContentType[] contentsToAdd)
@@ -255,17 +244,15 @@ namespace ss_blog_be.Services
                         .From("post", "pst")
                         .Select("ROWID", "id")
                         .Select("name", "name")
-                        //.Select("title")
-                        //.Select("description")
                         .Select("createdAt", "createdAtTicks")
                         .Select("isPublished")
-                        //.From("content")
-                        //.Select("objId", "contentId")
-                        //.Join("post", "content", "ROWID", "ROWID", contentPreviewSQ, SQLBuilderJoinTypeEnum.LEFT)
                         .From("postType")
                         .Select("ROWID", "typeId")
                         .Select("name", "typeName")
                         .Join("post", "postType", "typeId" ,"ROWID", SQLBuilderJoinTypeEnum.LEFT)
+                        .From("tags")
+                        .Select("content", "tags")
+                        .Join("post", "tags", "ROWID", "postId", SQLBuilderJoinTypeEnum.LEFT)
                         .Limit(count)
                         .Offset(offset);
 
@@ -282,23 +269,22 @@ namespace ss_blog_be.Services
                   .Where("typeId", SQLBuilderOperatorsEnum.EQUAL, postTypeId.Value);
             }
 
-            if (tags != null && tags.Length > 0)
-            {
-                var tagsStr = string.Join(" ", tags);
+           
 
-                q.From("postFTS")
-                    .Select("tags")
-                    .Select("tagsCodeSnippets")
-                    .Where("postFTS", SQLBuilderOperatorsEnum.EQUAL, "'"+ tagsStr + "'")
-                    .Join("post", "postFTS", "ROWID", "rowid");
-            }
-            else
+            if (postTypeId.HasValue)
             {
-                q.From("postFTS")
-               .Select("tags")
-               .Select("tagsCodeSnippets")
-               .Join("post", "postFTS", "ROWID", "rowid", SQLBuilderJoinTypeEnum.LEFT);
+
+                var ftsTable = getFTSTableName(postTypeId.Value);
+                if (tags != null && tags.Length > 0)
+                {
+                    var tagsStr = string.Join(" ", tags);
+
+                    q.From(ftsTable)
+                    .Where("postFTS", SQLBuilderOperatorsEnum.EQUAL, "'" + tagsStr + "'")
+                    .Join("tags", ftsTable, "ROWID", "rowid");
+                }
             }
+
 
             var sql = q.Build();
 
@@ -308,42 +294,14 @@ namespace ss_blog_be.Services
 
             foreach ( var dynb in dyna)
             {
-                //var titleOriginal = string.IsNullOrEmpty(dynb.title)? string.Empty : (dynb.title as string).FromBase64();
-                //var descriptionOriginal = dynb.description is string ? (dynb.description as string).FromBase64() : null;
-                long isPublished = dynb.isPublished;
-                var createdAt = new DateTime(dynb.createdAtTicks);
-                //var content = DynamicExtensions.HasProperty(dynb, "content") && dynb.content != null ? (dynb.content as string).FromBase64() : string.Empty;
-                var canLoadType = dynb.typeId is long;
-                var name = dynb.name is string ? dynb.name as string : string.Empty;
-                var id = dynb.id is long ? Convert.ToInt32(dynb.id) : 0;
 
-                var model = new PostModel()
-                {
-                    Name = name,
-                    //Title = titleOriginal,
-                    //Description = descriptionOriginal,
-                    Id = id,
-                    IsPublished = isPublished.ToBool(),
-                    Tags = [],
-                    CreatedAt = createdAt,
-                    //Content = content,
-                    Type = canLoadType ? new PostTypeModel() { Id = dynb.typeId, Name = dynb.typeName } : null,
-                };
+                PostModel post = PostModel.From(dynb);
 
-                if (canLoadType)
-                {
-                    if (dynb.typeId == 5)
-                    {
-                        model.Tags = dynb.tagsCodeSnippets is string && !string.IsNullOrEmpty(dynb.tagsCodeSnippets) ? dynb.tagsCodeSnippets.Split(' ') : [];
-                    }
-                    else
-                    {
-                        model.Tags = dynb.tags is string && !string.IsNullOrEmpty(dynb.tags) ? dynb.tags.Split(' ') : [];
-                    }
-                }
+                var _tags = DynamicExtensions.GetPropertyValueAs<string>(dynb, "tags", string.Empty);
 
+                post.Tags = _tags.Split(" ");
 
-                result.Add(model);
+                result.Add(post);
                
             }
 
@@ -395,7 +353,7 @@ namespace ss_blog_be.Services
             return contents.ToArray();
         } 
 
-        public async Task<PostModel> Get(int id)
+        public async Task<PostModel> Get(int id, bool loadContent)
         {
             var sqlBuilder = new SQLBuilderS();
             var sql = sqlBuilder.Init()
@@ -408,21 +366,21 @@ namespace ss_blog_be.Services
                         .Select("content")
                         .Select("isPublished")
                         .Where("ROWID", SQLBuilderOperatorsEnum.EQUAL, id)
-                        .From("postType", "type") 
-                        .Select("ROWID", "typeId") 
+                        .From("postType", "type")
+                        .Select("ROWID", "typeId")
                         .Select("name", "typeName")
-                        .Join("post", "postType", "typeId", "ROWID", SQLBuilderJoinTypeEnum.LEFT)
-                        .From("postFTS")
-                        .Select("tags")
-                        .Select("tagsCodeSnippets")
-                        .From("content")
+                        .Join("post", "postType", "typeId", "ROWID", SQLBuilderJoinTypeEnum.LEFT);
+
+
+            if (loadContent)
+            {
+                sql.From("content")
                         .Select("objId", "contentId")
                         .Select("type", "imgType")
-                        .Join("post", "postFTS", "ROWID", "rowid", SQLBuilderJoinTypeEnum.LEFT)
-                        .Join("post", "content", "ROWID", "postid", SQLBuilderJoinTypeEnum.LEFT)
-                        .Build();
+                        .Join("post", "content", "ROWID", "postid", SQLBuilderJoinTypeEnum.LEFT);
+            }
 
-            var dyna = (await this._conn.QueryAsync(sql));
+            var dyna = (await this._conn.QueryAsync(sql.Build()));
 
             if (dyna == null) throw new Exception("Not found");
 
@@ -431,22 +389,11 @@ namespace ss_blog_be.Services
             if (firstE == null) throw new Exception("Not found");
 
             PostModel data = PostModel.From(firstE);
-            var canLoadType = data.Type.Id != default;
 
-            if (canLoadType)
-            {
-                if(firstE.typeId == 5)
-                {
-                    data.Tags = firstE.tagsCodeSnippets is string && !string.IsNullOrEmpty(firstE.tagsCodeSnippets) ? firstE.tagsCodeSnippets.Split(' ') : [];
-                }
-                else
-                {
-                    data.Tags = firstE.tags is string && !string.IsNullOrEmpty(firstE.tags) ? firstE.tags.Split(' ') : [];
-                }
-            }
+            if (!loadContent) return data;
 
             //retrieve urls from storage ....
-            var validContents = dyna.Where(c => c.contentId != null && c.contentId is string);
+            var validContents =  dyna.Where(c => c.contentId != null && c.contentId is string);
 
             foreach (var c in validContents)
             {

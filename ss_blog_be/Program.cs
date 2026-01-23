@@ -72,7 +72,7 @@ postApi.MapGet("/", async (HttpContext context, [FromQuery] int limit, [FromQuer
 
 postApi.MapGet("/{id}", async ([FromRoute] int id, IOptions<StorageSettings> settingsAccessor) =>
 {
-    PostDataService dataService = new PostDataService(new ConnectionBuilder().Connect(), new StorageService(settingsAccessor.Value));
+    PostService dataService = new PostService(new ConnectionBuilder().Connect(), new StorageService(settingsAccessor.Value));
     var result = await dataService.Get(id);
     return Results.Ok(result);
 });
@@ -103,17 +103,17 @@ postApi.MapPut("/{id}/content/{fileName}", async ([FromRoute] int id, [FromRoute
 
 var tagsApi = app.MapGroup("/tags");
 
-tagsApi.MapGet("", async ([FromQuery] int? postTypeId) =>
+tagsApi.MapGet("", async ([FromQuery] int postTypeId) =>
 {
     TagService dataService = new TagService(new ConnectionBuilder().Connect());
-    var result = await dataService.GetTags(postTypeId);
+    var result = await dataService.Get(postTypeId);
     return Results.Ok(result);
 });
 
 tagsApi.MapPut("/{id}", async ([FromRoute] int id, [FromBody] TagUpdateModel model) =>
 {
     TagService dataService = new TagService(new ConnectionBuilder().Connect());
-    await dataService.UpdateTags(id, model.tags);
+    await dataService.Update(id, model.tags.ToArray());
     return Results.NoContent();
 });
 
@@ -180,13 +180,14 @@ sectionApi.MapDelete("/{id}", async ([FromRoute] int id) =>
 app.Run();
 
 [JsonSerializable(typeof(IEnumerable<PostModel>))]
-[JsonSerializable(typeof(IEnumerable<TagModel>))]
+[JsonSerializable(typeof(IEnumerable<TagOcurrencesModel>))]
+[JsonSerializable(typeof(TagOcurrencesModel[]))]
 [JsonSerializable(typeof(IEnumerable<PostTypeModel>))]
 [JsonSerializable(typeof(IEnumerable<SectionModel>))]
 [JsonSerializable(typeof(PostModel))]
 [JsonSerializable(typeof(PostTypeModel))]
 [JsonSerializable(typeof(TagsModel))]
-[JsonSerializable(typeof(TagModel))]
+[JsonSerializable(typeof(TagOcurrencesModel))]
 [JsonSerializable(typeof(ContentModel))]
 [JsonSerializable(typeof(PaginationModel))]
 [JsonSerializable(typeof(PostResult))]

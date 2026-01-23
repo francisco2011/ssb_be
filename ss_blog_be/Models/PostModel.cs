@@ -37,10 +37,8 @@ namespace ss_blog_be.Models
             long _isPublished = DynamicExtensions.GetPropertyValueAs<long>(dym, "isPublished", 0);
             var isPublished = _isPublished.ToBool();
             var createdAt = DynamicExtensions.GetAsDateTime(dym, "createdAtTicks", new DateTime());
-            var typeId = DynamicExtensions.GetPropertyValueAs<long>(dym, "typeId", 0);
+            var typeId = Convert.ToInt32(DynamicExtensions.GetPropertyValueAs<long>(dym, "typeId", 0));
             string typeName = DynamicExtensions.GetPropertyValueAs<string>(dym, "typeName", string.Empty);
-
-            var canLoadType = dym.typeId is long;
 
             return new PostModel
             {
@@ -63,8 +61,5 @@ namespace ss_blog_be.Models
         }
     }
 
-    public class TagsModel
-    {
-        public string[] Content { get; set; }
-    }
+
 }

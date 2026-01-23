@@ -1,5 +1,7 @@
-﻿using Microsoft.AspNetCore.Mvc.ViewFeatures;
+﻿using Microsoft.AspNetCore.Mvc.Routing;
+using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Microsoft.Data.Sqlite;
+using ss_blog_be.Models;
 using ss_blog_be.Storage;
 using System.ComponentModel.DataAnnotations;
 
@@ -7,43 +9,69 @@ namespace ss_blog_be.Services
 {
     public class PostService
     {
-        TagService tagservice;
+        TagDataService tagService;
         PostDataService postDataService; 
+        PostTypeService postTypeService;
         public PostService([Required] SqliteConnection conn, StorageService storageService)
         {
-            tagservice = new TagService(conn);
+            tagService = new TagDataService(conn);
             postDataService = new PostDataService(conn, storageService);
+            postTypeService = new PostTypeService(conn);
+        }
+
+        public async Task<PostModel> Get(int id)
+        {
+            var post = await postDataService.Get(id, true);
+
+            if (post.Type != null && post.Type.Id != default)
+            {
+                var tags = await tagService.getTagsAndFtsFor(id, post.Type.Id);
+                post.Tags = tags.ToTagsArray();
+            }
+            return post;
         }
 
         public async Task ChangePublishStatus(int id)
         {
-           var result = await postDataService.ChangePublishState(id);
+
+            var post = await postDataService.Get(id, false);
+
+            if (post.Type == null || post.Type.Id == default) throw new Exception("Can not change the status of a post without type!");
+
+            var result = await postDataService.ChangePublishState(id, post);
+
+            
             if (result.IsPublished)
             {
-                await tagservice.Restore(id);
+                 await tagService.Restore(id, post.Type.Id);
             }
-            else 
+            else
             {
-                await tagservice.Delete(id);
+                 await tagService.Delete(id, post.Type.Id);
             }
             
         }
 
-        public async Task Delete(long id)
+        public async Task Delete(int id)
         {
+            var post = await postDataService.Get(id, false);
+
             await postDataService.Delete(id);
-            await tagservice.Rebuild();
+
+            if(post.Type != null && post.Type.Id != default)
+            {
+                await tagService.Rebuild(post.Type.Id);
+            }
         }
 
         public async Task<long> Clone(int id)
         {
-            var original = await postDataService.Get(id);
+            var original = await postDataService.Get(id, false);
             original.Id = null;
             var model = await postDataService.Save(original);
             //will have a value since its a save operation LOL
             return model.Id.Value;
         }
-
 
     }
 }

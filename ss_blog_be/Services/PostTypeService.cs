@@ -30,5 +30,21 @@ namespace ss_blog_be.Services
 
             return result;
         }
+
+        public async Task<PostTypeModel> Get(int id)
+        {
+            var sqlBuilder = new SQLBuilderS();
+            var sql = sqlBuilder.Init()
+                        .From("postType")
+                        .Select("name", "name")
+                        .Select("ROWID", "id")
+                        .Where("ROWID", SQLBuilderOperatorsEnum.EQUAL, id)
+                        .Build();
+
+
+            var result = await this._conn.QueryFirstOrDefaultAsync<PostTypeModel>(sql);
+
+            return result;
+        }
     }
 }
