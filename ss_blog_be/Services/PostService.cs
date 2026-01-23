@@ -23,11 +23,11 @@ namespace ss_blog_be.Services
         {
             var post = await postDataService.Get(id, true);
 
-            if (post.Type != null && post.Type.Id != default)
-            {
-                var tags = await tagService.getTagsAndFtsFor(id, post.Type.Id);
-                post.Tags = tags.ToTagsArray();
-            }
+            //if (post.Type != null && post.Type.Id != default)
+            //{
+            //    var tags = await tagService.getTagsAndFtsFor(id, post.Type.Id);
+            //    post.Tags = tags.ToTagsArray();
+            //}
             return post;
         }
 

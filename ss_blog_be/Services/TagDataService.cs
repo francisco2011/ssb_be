@@ -49,16 +49,16 @@ namespace ss_blog_be.Services
         {
             var postFtsTableName = getFTSTableName(postTypeId);
 
-            dynamic dyna = await getTagsAndFtsFor(postId, postTypeId);
+            var dyna = await getTagsAndFtsFor(postId, postTypeId);
 
             string _sql = string.Empty;
             string __sql = string.Empty;
 
-            if (Convert.IsDBNull(dyna.previousContent) || string.IsNullOrEmpty(dyna.previousContent)) return;
+            if (string.IsNullOrEmpty(dyna.PreviousContent)) return;
 
             
-            _sql = $"INSERT OR REPLACE tags SET content = '{dyna.previousContent}' WHERE ROWID = {dyna.id}";
-            __sql = $"INSERT OR REPLACE INTO {postFtsTableName}(rowid, content, previousContent) VALUES ('{dyna.id}', '{dyna.previousTags}' ,'') Returning RowId";
+            _sql = $"INSERT OR REPLACE tags SET content = '{dyna.PreviousContent}' WHERE ROWID = {dyna.Id}";
+            __sql = $"INSERT OR REPLACE INTO {postFtsTableName}(rowid, content, previousContent) VALUES ('{dyna.Id}', '{dyna.PreviousContent}' ,'') Returning RowId";
     
             var result = await this._conn.ExecuteAsync(_sql);
             var _result = await this._conn.ExecuteAsync(__sql);
@@ -115,8 +115,8 @@ namespace ss_blog_be.Services
                 string __sql = string.Empty;
 
                 if (!string.IsNullOrEmpty(dyna.Content) && contentAsStr == dyna.Content) return;
-                _sql = $"INSERT OR REPLACE INTO tags = '{contentAsStr}' WHERE postId = {postTypeId}";
-                __sql = $"INSERT OR REPLACE INTO {postFtsTableName} (rowid, content, previousContent) VALUES ('{postTypeId}', '{contentAsStr}', '') Returning RowId";
+                _sql = $"INSERT OR REPLACE INTO tags (ROWID, content, previousContent, postId) VALUES ({dyna.Id}, '{contentAsStr}', '', {postId})";
+                __sql = $"INSERT OR REPLACE INTO {postFtsTableName} (ROWID, content) VALUES ('{postTypeId}', '{contentAsStr}') Returning RowId";
 
                 var result = await this._conn.ExecuteAsync(_sql);
                 var _result = await this._conn.ExecuteAsync(__sql);

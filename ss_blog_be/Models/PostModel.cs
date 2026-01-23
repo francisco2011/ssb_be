@@ -40,6 +40,8 @@ namespace ss_blog_be.Models
             var typeId = Convert.ToInt32(DynamicExtensions.GetPropertyValueAs<long>(dym, "typeId", 0));
             string typeName = DynamicExtensions.GetPropertyValueAs<string>(dym, "typeName", string.Empty);
 
+            string tags = DynamicExtensions.GetPropertyValueAs<string>(dym, "tags", string.Empty);
+
             return new PostModel
             {
                 Id = id,
@@ -54,7 +56,7 @@ namespace ss_blog_be.Models
                     Id = typeId,
                     Name = typeName,
                 },
-                Tags = [],
+                Tags = string.IsNullOrEmpty(tags)? [] : tags.Split(" "),
                 Contents = new List<ContentModel>(),
                 
             };

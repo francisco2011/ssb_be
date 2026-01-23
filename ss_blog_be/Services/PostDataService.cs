@@ -209,9 +209,11 @@ namespace ss_blog_be.Services
                 if (tags != null && tags.Length > 0)
                 {
                     var tagsStr = string.Join(" ", tags);
-
-                    q.From(ftsTable)
-                    .Where("postFTS", SQLBuilderOperatorsEnum.EQUAL, "'" + tagsStr + "'")
+                    
+                    q.From("tags")
+                    .Join("post", "tags", "ROWID", "postId", SQLBuilderJoinTypeEnum.LEFT)
+                    .From(ftsTable)
+                    .Where(ftsTable, SQLBuilderOperatorsEnum.EQUAL, "'" + tagsStr + "'")
                     .Join("tags", ftsTable, "ROWID", "rowid");
                 }
             }
@@ -280,7 +282,7 @@ namespace ss_blog_be.Services
                     var tagsStr = string.Join(" ", tags);
 
                     q.From(ftsTable)
-                    .Where("postFTS", SQLBuilderOperatorsEnum.EQUAL, "'" + tagsStr + "'")
+                    .Where(ftsTable, SQLBuilderOperatorsEnum.EQUAL, "'" + tagsStr + "'")
                     .Join("tags", ftsTable, "ROWID", "rowid");
                 }
             }
@@ -369,6 +371,9 @@ namespace ss_blog_be.Services
                         .From("postType", "type")
                         .Select("ROWID", "typeId")
                         .Select("name", "typeName")
+                        .From("tags")
+                        .Select("content", "tags")
+                        .Join("post", "tags", "ROWID", "postId", SQLBuilderJoinTypeEnum.LEFT)
                         .Join("post", "postType", "typeId", "ROWID", SQLBuilderJoinTypeEnum.LEFT);
 
 
@@ -389,6 +394,8 @@ namespace ss_blog_be.Services
             if (firstE == null) throw new Exception("Not found");
 
             PostModel data = PostModel.From(firstE);
+
+
 
             if (!loadContent) return data;
 
