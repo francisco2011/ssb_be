@@ -1,6 +1,8 @@
+using Amazon.Runtime.Internal;
 using Dapper;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
+using ss_blog_be.ApiHelpers;
 using ss_blog_be.Models;
 using ss_blog_be.Services;
 using ss_blog_be.Storage;
@@ -72,9 +74,11 @@ postApi.MapGet("/", async (HttpContext context, [FromQuery] int limit, [FromQuer
 
 postApi.MapGet("/{id}", async ([FromRoute] int id, IOptions<StorageSettings> settingsAccessor) =>
 {
-    PostService dataService = new PostService(new ConnectionBuilder().Connect(), new StorageService(settingsAccessor.Value));
-    var result = await dataService.Get(id);
-    return Results.Ok(result);
+    PostService service = new PostService(new ConnectionBuilder().Connect(), new StorageService(settingsAccessor.Value));
+    var result = await service.Get(id);
+
+    return OnErrorHandler.HandleGet<PostModel>(result);
+
 });
 
 
@@ -123,6 +127,7 @@ postTypeApi.MapGet("", async () =>
 {
     PostTypeService dataService = new PostTypeService(new ConnectionBuilder().Connect());
     var result = await dataService.Get();
+
     return Results.Ok(result);
 });
 

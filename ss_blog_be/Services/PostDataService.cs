@@ -387,15 +387,13 @@ namespace ss_blog_be.Services
 
             var dyna = (await this._conn.QueryAsync(sql.Build()));
 
-            if (dyna == null) throw new Exception("Not found");
+            if (dyna == null) return null;
 
             var firstE = dyna.FirstOrDefault();
 
-            if (firstE == null) throw new Exception("Not found");
+            if (firstE == null) return null;
 
             PostModel data = PostModel.From(firstE);
-
-
 
             if (!loadContent) return data;
 

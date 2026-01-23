@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc.Routing;
+﻿using ErrorOr;
+using Microsoft.AspNetCore.Mvc.Routing;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Microsoft.Data.Sqlite;
 using ss_blog_be.Models;
@@ -19,15 +20,12 @@ namespace ss_blog_be.Services
             postTypeService = new PostTypeService(conn);
         }
 
-        public async Task<PostModel> Get(int id)
+        public async Task<ErrorOr<PostModel>> Get(int id)
         {
             var post = await postDataService.Get(id, true);
 
-            //if (post.Type != null && post.Type.Id != default)
-            //{
-            //    var tags = await tagService.getTagsAndFtsFor(id, post.Type.Id);
-            //    post.Tags = tags.ToTagsArray();
-            //}
+            if(post == null) return Error.NotFound();
+            
             return post;
         }
 
