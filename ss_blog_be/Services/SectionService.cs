@@ -48,7 +48,7 @@ namespace ss_blog_be.Services
             var b64Content = !string.IsNullOrEmpty(model.Content) ? model.Content.ToBase64() : string.Empty.ToBase64();
             
             //INSERT INTO section (name, content, tag, modifiable) VALUES ('title', '', '{{title}}', 0);
-            string _sql = $"INSERT INTO section (name, content, contentHtml, tag, modifiable,createdAt) VALUES ('{model.Name}', '{model.Content}', {""}, '{""}', 1, {DateTime.Now.Ticks}) Returning RowId";
+            string _sql = $"INSERT INTO section (name, content, contentHtml, tag, modifiable,createdAt) VALUES ('{model.Name}', '{model.Content}', '{""}', '{""}', 1, {DateTime.Now.Ticks}) Returning RowId";
             var id = await this._conn.ExecuteScalarAsync<int>(_sql, model);
 
             model.Id = id;

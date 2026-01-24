@@ -1,5 +1,6 @@
 using Amazon.Runtime.Internal;
 using Dapper;
+using ErrorOr;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using ss_blog_be.ApiHelpers;
@@ -145,10 +146,20 @@ var sectionApi = app.MapGroup("/section");
 
 sectionApi.MapPost("", async ([FromBody] SectionModel model) =>
 {
-    SectionService service = new SectionService(new ConnectionBuilder().Connect());
-    var result = await service.Save(model);
+    try
+    {
+        SectionService service = new SectionService(new ConnectionBuilder().Connect());
+        var result = await service.Save(model);
+        return Results.Ok(result);
+    }
+    catch(Exception ex)
+    {
+        return Results.Problem();
+    }
 
-    return Results.Ok(result);
+
+
+   
 });
 
 sectionApi.MapPut("/{id}", async ([FromRoute] int id, [FromBody] SectionModel model) =>
