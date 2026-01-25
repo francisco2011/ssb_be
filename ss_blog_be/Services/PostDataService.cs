@@ -33,7 +33,7 @@ namespace ss_blog_be.Services
 
         public async Task<ContentModel> SaveContent(int id, Stream content, string mimeType, ContentType contentType)
         {
-            var fileName = id.ToString() + "_" + contentType.ToString() + "_" + Guid.NewGuid().ToString();
+            var fileName = id.ToString() + "/" + contentType.ToString() + "_" + Guid.NewGuid().ToString();
 
             // There can be only 1 preview and 1 render ....
             if(contentType == ContentType.preview || contentType == ContentType.render

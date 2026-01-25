@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using ss_blog_be.ApiHelpers;
 using ss_blog_be.Models;
+using ss_blog_be.Models.Storage;
 using ss_blog_be.Services;
 using ss_blog_be.Storage;
 using ss_blog_be.Types;
@@ -142,6 +143,18 @@ contentApi.MapGet("/{name}", async ([FromRoute] string name, IOptions<StorageSet
     return Results.Ok(result);
 });
 
+contentApi.MapGet("/storage/traverse", async (IOptions<StorageSettings> settingsAccessor, [FromQuery] string? bucket, string[]? folders) =>
+{
+    StorageService service = new StorageService(settingsAccessor.Value);
+    var result = await service.Traverse(bucket, folders);
+
+    return Results.Ok(result);
+});
+
+
+
+
+
 var sectionApi = app.MapGroup("/section");
 
 sectionApi.MapPost("", async ([FromBody] SectionModel model) =>
@@ -200,6 +213,7 @@ app.Run();
 [JsonSerializable(typeof(TagOcurrencesModel[]))]
 [JsonSerializable(typeof(IEnumerable<PostTypeModel>))]
 [JsonSerializable(typeof(IEnumerable<SectionModel>))]
+[JsonSerializable(typeof(StorageObjectModel[]))]
 [JsonSerializable(typeof(PostModel))]
 [JsonSerializable(typeof(PostTypeModel))]
 [JsonSerializable(typeof(TagsModel))]

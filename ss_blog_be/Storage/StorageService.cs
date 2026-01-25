@@ -2,6 +2,7 @@
 using Amazon.S3.Model;
 using Amazon.S3.Transfer;
 using ss_blog_be.Models;
+using ss_blog_be.Models.Storage;
 
 namespace ss_blog_be.Storage
 {
@@ -42,6 +43,111 @@ namespace ss_blog_be.Storage
             }
 
         }
+
+        public async Task<StorageObjectModel[]> Traverse(string bucket, string[] folders)
+        {
+            if (string.IsNullOrEmpty(bucket))
+            {
+                return await GetAllBucketsAsync();
+            }
+
+            var allFoldersAsPrefix = folders != null && folders.Length > 0  ? string.Join("/", folders) : string.Empty;
+            allFoldersAsPrefix = string.IsNullOrEmpty(allFoldersAsPrefix) ? allFoldersAsPrefix : allFoldersAsPrefix + "/";
+            return await GetContentPerBucketAsync(bucket, allFoldersAsPrefix, "/");
+        }
+
+        public async Task<StorageObjectModel[]> GetAllBucketsAsync()
+        {
+            // The AmazonS3Client automatically picks up credentials
+            // from the environment or configuration.
+            
+                try
+                {
+                    ListBucketsResponse response = await client.ListBucketsAsync();
+
+                    return response.Buckets.Select(c => new StorageObjectModel() { Name = c.BucketName, Id = c.BucketArn, Type= StorageObjectType.Bucket }).ToArray();
+                }
+                catch (AmazonS3Exception ex)
+                {
+                    Console.WriteLine($"Error encountered on server. Message:'{ex.Message}' when listing buckets");
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Unknown error encountered on server. Message:'{ex.Message}' when listing buckets");
+                    throw;
+                }
+            
+        }
+
+        public async Task<StorageObjectModel[]> GetContentPerBucketAsync(string bucketName, string prefix, string delimiter)
+        {
+            // The AmazonS3Client automatically picks up credentials
+            // from the environment or configuration.
+
+            try
+            {
+                var response = await client.ListObjectsV2Async(new ListObjectsV2Request()
+                {
+                    BucketName = bucketName,
+                    Delimiter = delimiter,
+                    Prefix = prefix
+                });
+
+                var directories = new List<StorageObjectModel>();
+
+                if(response.CommonPrefixes != null)
+                {
+                    response.CommonPrefixes.ForEach(c =>
+                    {
+                        var splitArr = c.Split(delimiter);
+                        var name = splitArr[splitArr.Length-2]; // dont care about last cuz it will be an empty string ..... 
+                        directories.Add(new StorageObjectModel()
+                        {
+                            Id = name,
+                            Name = name,
+                            Type = StorageObjectType.Directory
+                        });
+                    });
+                }
+
+                var objects = new List<StorageObjectModel>();
+
+
+                if(response.S3Objects != null)
+                {
+
+                    response.S3Objects.Where(c => c.Key != prefix).ToList()
+                                        .ForEach(async c => {
+
+                                            objects.Add(new StorageObjectModel()
+                                            {
+                                                Id = c.Key,
+                                                Name = c.Key,
+                                                Type = (c.Key.EndsWith(delimiter) ? StorageObjectType.Directory : StorageObjectType.File),
+                                                Url = await GenerateDownloadUrl(c.Key)
+
+                                            });
+                                        });
+
+                } 
+                    
+
+                return directories.Concat(objects).ToArray();
+            }
+            catch (AmazonS3Exception ex)
+            {
+                Console.WriteLine($"Error encountered on server. Message:'{ex.Message}' when listing buckets");
+                throw;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Unknown error encountered on server. Message:'{ex.Message}' when listing buckets");
+                throw;
+            }
+
+        }
+
 
         public async Task MoveFilesFromStagingToMain(ICollection<string> files)
         {
