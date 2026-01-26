@@ -44,6 +44,23 @@ namespace ss_blog_be.Storage
 
         }
 
+        public async Task<StorageObjectModel> Upload(Stream file, string mimeType, string fileName, string bucket, string path)
+        {
+            fileName = fileName.Replace(@"/", string.Empty);
+
+            var newFileName = (!string.IsNullOrEmpty(path)? path + "/" : string.Empty) + fileName;
+
+            var downloadUrl = await UploadFileAsyncTo(file, mimeType, newFileName, bucket);
+
+            return new StorageObjectModel()
+            {
+                Id = newFileName,
+                Name = newFileName,
+                Type = StorageObjectType.File,
+                Url = downloadUrl,
+            };
+        }
+
         public async Task<StorageObjectModel[]> Traverse(string bucket, string[] folders)
         {
             if (string.IsNullOrEmpty(bucket))
@@ -106,7 +123,7 @@ namespace ss_blog_be.Storage
                         {
                             Id = name,
                             Name = name,
-                            Type = StorageObjectType.Directory
+                            Type = StorageObjectType.Directory,
                         });
                     });
                 }
@@ -125,8 +142,10 @@ namespace ss_blog_be.Storage
                                                 Id = c.Key,
                                                 Name = c.Key,
                                                 Type = (c.Key.EndsWith(delimiter) ? StorageObjectType.Directory : StorageObjectType.File),
-                                                Url = await GenerateDownloadUrl(c.Key)
-
+                                                Url = await GenerateDownloadUrl(c.Key),
+                                                Size = c.Size,
+                                                UpdatedOn = c.LastModified
+                                                
                                             });
                                         });
 
@@ -189,6 +208,40 @@ namespace ss_blog_be.Storage
         }
 
 
+        private async Task<string> UploadFileAsyncTo(Stream file, string mimeType, string fileName, string bucket, IDictionary<string, string> tags = null)
+        {
+
+            try
+            {
+                var uploadRequest = new TransferUtilityUploadRequest
+                {
+                    BucketName = bucket,
+                    Key = fileName,
+                    InputStream = file,
+                    DisablePayloadSigning = true, //required by r2 on 2026-01-11
+                    DisableDefaultChecksumValidation = true //required by r2 on 2026-01-11
+                };
+
+                //not supported by r2 on 2026-01-11
+                //if (tags != null && tags.Any())
+                //{
+                //    uploadRequest.TagSet = tags.Select(c => new Tag() { Key = c.Key, Value = c.Value }).ToList();
+                //}
+
+                using (TransferUtility tranUtility =
+                new TransferUtility(client))
+                {
+                    await tranUtility.UploadAsync(uploadRequest);
+
+                }
+
+                return await GenerateDownloadUrl(fileName, bucket);
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
+        }
 
         public async Task<string> UploadFileAsync(Stream file, string mimeType, string fileName, IDictionary<string, string> tags = null)
         {

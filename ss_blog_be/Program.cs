@@ -143,7 +143,7 @@ contentApi.MapGet("/{name}", async ([FromRoute] string name, IOptions<StorageSet
     return Results.Ok(result);
 });
 
-contentApi.MapGet("/storage/traverse", async (IOptions<StorageSettings> settingsAccessor, [FromQuery] string? bucket, string[]? folders) =>
+contentApi.MapGet("/storage/traverse", async (IOptions<StorageSettings> settingsAccessor, [FromQuery] string? bucket, [FromQuery] string[]? folders) =>
 {
     StorageService service = new StorageService(settingsAccessor.Value);
     var result = await service.Traverse(bucket, folders);
@@ -151,7 +151,19 @@ contentApi.MapGet("/storage/traverse", async (IOptions<StorageSettings> settings
     return Results.Ok(result);
 });
 
+contentApi.MapPost("/bucket/{bucket}/{fileName}", async ([FromRoute] string bucket,
+                                                        [FromRoute] string fileName,
+                                                        [FromQuery] string? path,
+                                                        [FromForm] IFormFile file, IOptions <StorageSettings> settingsAccessor) =>
+{
+    var stream = file.OpenReadStream();
+    var type = file.ContentType;
 
+    StorageService service = new StorageService(settingsAccessor.Value);
+    var result = await service.Upload(stream, type, fileName, bucket, path);
+
+    return Results.Ok(result);
+}).DisableAntiforgery();
 
 
 
