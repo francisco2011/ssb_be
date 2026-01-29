@@ -27,9 +27,43 @@ namespace ss_blog_be.Services
         public async Task<ContentModel> UpdateContent(int id, Stream content, string mimeType, string fileName)
         {
             var newUrl = await _storageService.UploadFileAsync(content, mimeType, fileName, null);
-            return new ContentModel() { Url = newUrl,  MimeType = mimeType, Name = fileName };
+            return new ContentModel() { Url = newUrl, MimeType = mimeType, Name = fileName };
 
-        } 
+        }
+
+        public async Task<ContentModel> SaveContent(int id, ContentModel model)
+        {
+
+
+            var fileName = string.IsNullOrEmpty(model.Name) ? model.Name : id.ToString() + "/" + model.Type.ToString() + "_" + Guid.NewGuid().ToString();
+
+            // There can be only 1 preview and 1 render ....
+            if (model.Type == ContentType.preview || model.Type == ContentType.render
+                || model.Type == ContentType.descriptionRender || model.Type == ContentType.titleRender)
+            {
+                var sqlBuilder = new SQLBuilderS();
+                var sql = sqlBuilder.Init()
+                        .From("content")
+                        .Select("objId", "fileName")
+                        .Where("postId", SQLBuilderOperatorsEnum.EQUAL, id)
+                        .Where("type", SQLBuilderOperatorsEnum.EQUAL, "'" + model.Type + "'")
+                        .Build();
+
+                var dyna = (await this._conn.QueryFirstOrDefaultAsync(sql));
+
+                if (dyna != null)
+                {
+                    string delSql = $"DELETE FROM content WHERE  postId ='{id}' AND type = '{model.Type}'";
+                    await this._conn.ExecuteAsync(delSql);
+                    await this._storageService.DeleteObject(dyna.fileName as string);
+                }
+            }
+
+            string _sql = $"INSERT INTO content (postId, objId, type) VALUES ('{id}', '{fileName}', '{model.Type}') Returning RowId";
+            await this._conn.ExecuteAsync(_sql);
+
+            return model;
+        }
 
         public async Task<ContentModel> SaveContent(int id, Stream content, string mimeType, ContentType contentType)
         {

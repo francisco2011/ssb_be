@@ -83,6 +83,15 @@ postApi.MapGet("/{id}", async ([FromRoute] int id, IOptions<StorageSettings> set
 
 });
 
+postApi.MapPost("/{id}/content", async ([FromRoute] int id, [FromRoute] ContentType contentTypeId,
+                                                            [FromBody] ContentModel model, IOptions<StorageSettings> settingsAccessor) =>
+{
+
+    PostDataService dataService = new PostDataService(new ConnectionBuilder().Connect(), new StorageService(settingsAccessor.Value));
+    var result = await dataService.SaveContent(id, model);
+
+    return Results.Ok(result);
+}).DisableAntiforgery();
 
 postApi.MapPost("/{id}/contentType/{contentTypeId}", async ([FromRoute] int id, [FromRoute] ContentType contentTypeId, 
                                                             [FromForm] IFormFile file, IOptions<StorageSettings> settingsAccessor) =>
