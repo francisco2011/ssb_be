@@ -3,6 +3,7 @@ using Amazon.S3.Model;
 using Amazon.S3.Transfer;
 using ss_blog_be.Models;
 using ss_blog_be.Models.Storage;
+using System.Security.AccessControl;
 
 namespace ss_blog_be.Storage
 {
@@ -314,16 +315,6 @@ namespace ss_blog_be.Storage
             return await GenerateDownloadUrl(objectName, Settings.MainBucket);
         }
 
-        public async Task<ICollection<string>> GenerateDownloadUrls(string[] objectNames)
-        {
-            if (objectNames.Length == 0) return [];
-
-            var allUrls = objectNames.Select(c => GenerateDownloadUrl(c, Settings.MainBucket));
-
-            return await Task.WhenAll(allUrls);
-
-        }
-
         public async Task<string> GenerateDownloadUrl(string objectName)
         {
             if (string.IsNullOrEmpty(objectName)) return null;
@@ -362,6 +353,33 @@ namespace ss_blog_be.Storage
             }
             return urlString;
 
+        }
+
+        public async Task DeleteObjectsMatch(string toMatch)
+        {
+            if (!string.IsNullOrEmpty(toMatch)) return;
+
+            try
+            {
+
+                var deleteObjectRequest = new DeleteObjectRequest
+                {
+                    BucketName = Settings.MainBucket,
+                    IfMatch = toMatch,
+
+                };
+
+                Console.WriteLine("Deleting an object");
+                await client.DeleteObjectAsync(deleteObjectRequest);
+            }
+            catch (AmazonS3Exception e)
+            {
+                Console.WriteLine("Error encountered on server. Message:'{0}' when writing an object", e.Message);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("Unknown encountered on server. Message:'{0}' when writing an object", e.Message);
+            }
         }
 
         public async Task DeleteObject(string objectName)

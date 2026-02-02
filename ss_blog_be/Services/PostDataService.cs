@@ -35,7 +35,7 @@ namespace ss_blog_be.Services
         {
 
 
-            var fileName = string.IsNullOrEmpty(model.Name) ? model.Name : id.ToString() + "/" + model.Type.ToString() + "_" + Guid.NewGuid().ToString();
+            var fileName = !string.IsNullOrEmpty(model.Name) ? model.Name : id.ToString() + "/" + model.Type.ToString() + "_" + Guid.NewGuid().ToString();
 
             // There can be only 1 preview and 1 render ....
             if (model.Type == ContentType.preview || model.Type == ContentType.render
@@ -55,7 +55,14 @@ namespace ss_blog_be.Services
                 {
                     string delSql = $"DELETE FROM content WHERE  postId ='{id}' AND type = '{model.Type}'";
                     await this._conn.ExecuteAsync(delSql);
-                    await this._storageService.DeleteObject(dyna.fileName as string);
+
+                    //TODO: ADD CONFIG TO THIS
+                    if (!model.Name.StartsWith("common"))
+                    {
+                        await this._storageService.DeleteObject(dyna.fileName as string);
+                    }
+
+                    
                 }
             }
 
@@ -105,19 +112,11 @@ namespace ss_blog_be.Services
             return new ContentModel() { Name = fileName, Type = contentType, Url = url, PostId = id, MimeType = mimeType};
         }
 
-        public async Task Delete(long id)
+        public async Task Delete(int id)
         {
 
             try
             {
-                var __sqlBuilder = new SQLBuilderS();
-                var __sql = __sqlBuilder.Init()
-                            .Delete()
-                            .From("postFTS")
-                            .Where("ROWID", SQLBuilderOperatorsEnum.EQUAL, id)
-                            .Build();
-
-                await this._conn.ExecuteAsync(__sql);
 
                 var _sqlBuilder = new SQLBuilderS();
                 var _sql = _sqlBuilder.Init()
@@ -208,8 +207,9 @@ namespace ss_blog_be.Services
             var b64title = !string.IsNullOrEmpty(model.Title) ? model.Title.ToBase64() : string.Empty.ToBase64();
             
             var typeId = model.Type != null ? model.Type.Id.ToString() : "NULL";
+            var name = "New post created on " + DateTime.Today.ToShortDateString();
 
-            string sql = $"INSERT INTO post (title, content, description, typeId, isPublished, createdAt, name) VALUES ('{b64title}', '{b64Content}', '{b64description}', {typeId}, {false.ToInt()} ,{DateTime.Now.Ticks}, '') Returning RowId";
+            string sql = $"INSERT INTO post (title, content, description, typeId, isPublished, createdAt, name) VALUES ('{b64title}', '{b64Content}', '{b64description}', {typeId}, {false.ToInt()} ,{DateTime.Now.Ticks}, '{name}') Returning RowId";
             var id = await this._conn.ExecuteScalarAsync<int>(sql, model);
 
             model.Id = id;
@@ -335,7 +335,7 @@ namespace ss_blog_be.Services
 
                 var _tags = DynamicExtensions.GetPropertyValueAs<string>(dynb, "tags", string.Empty);
 
-                post.Tags = _tags.Split(" ");
+                post.Tags = string.IsNullOrEmpty(_tags) ? [] : _tags.Split(" ");
 
                 result.Add(post);
                

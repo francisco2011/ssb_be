@@ -6,6 +6,7 @@ using System.ComponentModel.DataAnnotations;
 using ss_blog_be.Models;
 using ss_blog_be.Storage;
 using ss_blog_be.Common.Extensions;
+using Amazon.S3.Model;
 
 namespace ss_blog_be.Services
 {
@@ -20,22 +21,24 @@ namespace ss_blog_be.Services
 
         }
 
-        public async Task Delete(int postId, int postTypeId)
+        public async Task Delete(int postId, int postTypeId, bool isPhysicalDelete = false)
         {
+            if (postTypeId == default) return;
 
             var postFtsTableName = getFTSTableName(postTypeId);
 
             var dyna = await getTagsAndFtsFor(postId, postTypeId);
 
-            if(dyna.Id == default) return;
+            if (dyna == null || dyna.Id == -1) return;
 
             string _sql = string.Empty;
             string __sql = string.Empty;
 
             if (string.IsNullOrEmpty(dyna.Content)) return;
 
-                _sql = $"UPDATE tags SET content = '', previousContent = '{dyna.Content}' WHERE ROWID = {dyna.Id}";
-                __sql = $"INSERT INTO {postFtsTableName} ({postFtsTableName}, rowid, content, previousContent) VALUES ('delete', '{dyna.Id}','{dyna.Content}')";
+                _sql = isPhysicalDelete ? $"DELETE from tags WHERE ROWID = {dyna.Id}" : 
+                                            $"UPDATE tags SET content = '', previousContent = '{dyna.Content}' WHERE ROWID = {dyna.Id}";
+                __sql = $"INSERT INTO {postFtsTableName} ({postFtsTableName}, rowid, content) VALUES ('delete', '{dyna.Id}')";
             
 
             var result = await this._conn.ExecuteAsync(_sql);
@@ -91,9 +94,9 @@ namespace ss_blog_be.Services
 
             var dyna = (await this._conn.QueryFirstOrDefaultAsync(sql));
 
-            if (dyna == null) return new TagModel();
+            if (dyna == null) return new TagModel() { Id = -1 };
             
-            int id = Convert.ToInt32(DynamicExtensions.GetPropertyValueAs<int>(dyna, "long", 0));
+            int id = Convert.ToInt32(DynamicExtensions.GetPropertyValueAs<long>(dyna, "id", 0));
             string tagsContent = DynamicExtensions.GetPropertyValueAs<string>(dyna, "tagsContent", string.Empty);
             string previousContent = DynamicExtensions.GetPropertyValueAs<string>(dyna, "previousContent", string.Empty);
             int ftsId = Convert.ToInt32(DynamicExtensions.GetPropertyValueAs<long>(dyna, "postfts_rowid", 0));

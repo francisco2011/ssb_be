@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc.Routing;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Microsoft.Data.Sqlite;
 using ss_blog_be.Models;
+using ss_blog_be.Services.Interfaces;
 using ss_blog_be.Storage;
 using System.ComponentModel.DataAnnotations;
 
@@ -13,11 +14,13 @@ namespace ss_blog_be.Services
         TagDataService tagService;
         PostDataService postDataService; 
         PostTypeService postTypeService;
-        public PostService([Required] SqliteConnection conn, StorageService storageService)
+        StorageService storageService;
+        public PostService([Required] SqliteConnection conn, StorageService _storageService)
         {
             tagService = new TagDataService(conn);
-            postDataService = new PostDataService(conn, storageService);
+            postDataService = new PostDataService(conn, _storageService);
             postTypeService = new PostTypeService(conn);
+            storageService = _storageService;
         }
 
         public async Task<ErrorOr<PostModel>> Get(int id)
@@ -54,12 +57,16 @@ namespace ss_blog_be.Services
         {
             var post = await postDataService.Get(id, false);
 
+            await tagService.Delete(id, post.Type.Id, true);
+
             await postDataService.Delete(id);
 
-            if(post.Type != null && post.Type.Id != default)
-            {
-                await tagService.Rebuild(post.Type.Id);
-            }
+            await storageService.DeleteObjectsMatch($"{id}/");
+
+            //if(post.Type != null && post.Type.Id != default)
+            //{
+            //    await tagService.Rebuild(post.Type.Id);
+            //}
         }
 
         public async Task<long> Clone(int id)

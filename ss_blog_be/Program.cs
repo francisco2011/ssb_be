@@ -1,6 +1,7 @@
 using Amazon.Runtime.Internal;
 using Dapper;
 using ErrorOr;
+using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using ss_blog_be.ApiHelpers;
@@ -49,6 +50,12 @@ postApi.MapPost("/{id}/clone", async ([FromRoute] int id, IOptions<StorageSettin
     return Results.Created($"/{result}", result);
 });
 
+//postApi.MapPatch("{id}", async ([FromRoute] int id, [FromBody] JsonPatchDocument<PostModel> patchDoc, IOptions<StorageSettings> settingsAccessor) =>
+//{
+    
+
+//});
+
 postApi.MapDelete("/{id}", async ([FromRoute] int id, IOptions<StorageSettings> settingsAccessor) =>
 {
     PostService dataService = new PostService(new ConnectionBuilder().Connect(), new StorageService(settingsAccessor.Value));
@@ -83,8 +90,7 @@ postApi.MapGet("/{id}", async ([FromRoute] int id, IOptions<StorageSettings> set
 
 });
 
-postApi.MapPost("/{id}/content", async ([FromRoute] int id, [FromRoute] ContentType contentTypeId,
-                                                            [FromBody] ContentModel model, IOptions<StorageSettings> settingsAccessor) =>
+postApi.MapPost("/{id}/content", async ([FromRoute] int id, [FromBody] ContentModel model, IOptions<StorageSettings> settingsAccessor) =>
 {
 
     PostDataService dataService = new PostDataService(new ConnectionBuilder().Connect(), new StorageService(settingsAccessor.Value));
