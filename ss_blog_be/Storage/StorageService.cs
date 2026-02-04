@@ -169,44 +169,7 @@ namespace ss_blog_be.Storage
         }
 
 
-        public async Task MoveFilesFromStagingToMain(ICollection<string> files)
-        {
-            if (files.Count == 0) return;
 
-            try
-            {
-
-                var allCopyRequests = files.Select(c =>
-                {
-                    var copyFileRequest = new CopyObjectRequest
-                    {
-                        SourceBucket = bucketNameStaging,
-                        SourceKey = c,
-                        DestinationBucket = Settings.MainBucket,
-                        DestinationKey = c,//Put archive folder path here
-                    };
-
-                    return client.CopyObjectAsync(copyFileRequest);
-
-                });
-
-                await Task.WhenAll(allCopyRequests);
-
-                var allDeleteReq = files.Select(c =>
-                {
-                    return client.DeleteObjectAsync(bucketNameStaging, c);
-                });
-
-                await Task.WhenAll(allDeleteReq);
-
-            }
-            catch (Exception ex)
-            {
-                //TODO: Next do not ignore errors ....
-                Console.Error.WriteLine(ex.ToString());
-                //throw;
-            }
-        }
 
 
         private async Task<string> UploadFileAsyncTo(Stream file, string mimeType, string fileName, string bucket, IDictionary<string, string> tags = null)
@@ -279,37 +242,6 @@ namespace ss_blog_be.Storage
             }
         }
 
-        private async Task<ContentModel> GenerateUploadUrl(ContentModel model)
-        {
-
-            var id = Guid.NewGuid();
-            model.Name = id + "_" + model.Name;
-
-            string urlString = "";
-            try
-            {
-                GetPreSignedUrlRequest request1 = new GetPreSignedUrlRequest
-                {
-                    BucketName = bucketNameStaging,
-                    ContentType = model.MimeType,
-                    Key = model.Name,
-                    Expires = DateTime.Now.AddMinutes(5),
-                    Verb = HttpVerb.PUT
-                };
-                urlString = await client.GetPreSignedURLAsync(request1);
-            }
-            catch (AmazonS3Exception e)
-            {
-                Console.WriteLine("Error encountered on server. Message:'{0}' when writing an object", e.Message);
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine("Unknown encountered on server. Message:'{0}' when writing an object", e.Message);
-            }
-            model.Url = urlString;
-            return model;
-        }
-
         public async Task<string> GenerateDownloadUrlMainStorage(string objectName)
         {
             return await GenerateDownloadUrl(objectName, Settings.MainBucket);
@@ -355,22 +287,32 @@ namespace ss_blog_be.Storage
 
         }
 
-        public async Task DeleteObjectsMatch(string toMatch)
+        public async Task DeleteObjectsMatch(string path)
         {
-            if (!string.IsNullOrEmpty(toMatch)) return;
+            if (string.IsNullOrEmpty(path)) return;
 
+            
             try
             {
 
-                var deleteObjectRequest = new DeleteObjectRequest
+                var response = await client.ListObjectsV2Async(new ListObjectsV2Request()
                 {
                     BucketName = Settings.MainBucket,
-                    IfMatch = toMatch,
+                    Delimiter = "/",
+                    Prefix = path
+                });
+
+                if (response?.S3Objects == null) return;
+
+                var deleteObjectRequest = new DeleteObjectsRequest
+                {
+                    BucketName = Settings.MainBucket,
+                    Objects = response.S3Objects.Select(x => new KeyVersion() { Key = x.Key }).ToList(),
 
                 };
 
                 Console.WriteLine("Deleting an object");
-                await client.DeleteObjectAsync(deleteObjectRequest);
+                await client.DeleteObjectsAsync(deleteObjectRequest);
             }
             catch (AmazonS3Exception e)
             {
@@ -395,7 +337,6 @@ namespace ss_blog_be.Storage
 
                 };
 
-                Console.WriteLine("Deleting an object");
                 await client.DeleteObjectAsync(deleteObjectRequest);
             }
             catch (AmazonS3Exception e)

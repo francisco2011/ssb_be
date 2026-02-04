@@ -1,50 +1,38 @@
-﻿using Dapper;
+﻿using ErrorOr;
 using Microsoft.Data.Sqlite;
-using ss_blog_be.Common.SQLBuilder.Enums;
-using ss_blog_be.Common.SQLBuilder;
 using ss_blog_be.Models;
+using ss_blog_be.Services.Data;
+using ss_blog_be.Storage;
 using System.ComponentModel.DataAnnotations;
 
 namespace ss_blog_be.Services
 {
     public class PostTypeService
     {
-        private SqliteConnection _conn { get; }
-
+        TagDataService tagService;
+        PostDataService postDataService;
+        PostTypeDataService postTypeService;
         public PostTypeService([Required] SqliteConnection conn)
         {
-            _conn = conn;
+            tagService = new TagDataService(conn);
+            postTypeService = new PostTypeDataService(conn);
         }
 
-        public async Task<IEnumerable<PostTypeModel>> Get()
+        public async Task<ErrorOr<PostTypeModel>> Save(PostTypeModel model)
         {
-            var sqlBuilder = new SQLBuilderS();
-            var sql = sqlBuilder.Init()
-                        .From("postType")
-                        .Select("name", "name")
-                        .Select("ROWID", "id")
-                        .Build();
+            if (model == null) return Error.Conflict("Post Type can not be null");
+            if (string.IsNullOrEmpty(model.Name)) return Error.Validation("Name can not be empty");
 
+            var postTypeFromDb = postTypeService.Get(null, model.Name);
+            if(postTypeFromDb != null) return Error.Validation("Name is already in use");
 
-            var result = await this._conn.QueryAsync<PostTypeModel>(sql);
-
-            return result;
+            return await postTypeService.Save(model);
         }
 
-        public async Task<PostTypeModel> Get(int id)
+        public async Task<ErrorOr.Deleted> Delete(int id)
         {
-            var sqlBuilder = new SQLBuilderS();
-            var sql = sqlBuilder.Init()
-                        .From("postType")
-                        .Select("name", "name")
-                        .Select("ROWID", "id")
-                        .Where("ROWID", SQLBuilderOperatorsEnum.EQUAL, id)
-                        .Build();
 
-
-            var result = await this._conn.QueryFirstOrDefaultAsync<PostTypeModel>(sql);
-
-            return result;
+            throw new NotImplementedException();
         }
     }
 }

@@ -1,5 +1,6 @@
 ﻿using Microsoft.Data.Sqlite;
 using ss_blog_be.Models;
+using ss_blog_be.Services.Data;
 using System.ComponentModel.DataAnnotations;
 
 namespace ss_blog_be.Services
@@ -9,7 +10,7 @@ namespace ss_blog_be.Services
         private SqliteConnection _conn { get; }
         TagDataService tagservice;
         PostDataService postDataService;
-        PostTypeService postTypeService;
+        PostTypeDataService postTypeService;
 
         public TagService([Required] SqliteConnection conn)
         {
@@ -17,7 +18,7 @@ namespace ss_blog_be.Services
             
             tagservice = new TagDataService(conn);
             postDataService = new PostDataService(conn, null);
-            postTypeService = new PostTypeService(conn);
+            postTypeService = new PostTypeDataService(conn);
 
         }
 
@@ -30,7 +31,7 @@ namespace ss_blog_be.Services
 
         public async Task<TagOcurrencesModel[]> Get(int postTypeid)
         {
-            var postType = await postTypeService.Get(postTypeid);
+            var postType = await postTypeService.Get(postTypeid, null);
 
             if (postType == null) throw new Exception("Post type not registered");
 

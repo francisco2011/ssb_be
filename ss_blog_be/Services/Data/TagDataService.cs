@@ -8,7 +8,7 @@ using ss_blog_be.Storage;
 using ss_blog_be.Common.Extensions;
 using Amazon.S3.Model;
 
-namespace ss_blog_be.Services
+namespace ss_blog_be.Services.Data
 {
     public class TagDataService
     {
@@ -36,13 +36,13 @@ namespace ss_blog_be.Services
 
             if (string.IsNullOrEmpty(dyna.Content)) return;
 
-                _sql = isPhysicalDelete ? $"DELETE from tags WHERE ROWID = {dyna.Id}" : 
-                                            $"UPDATE tags SET content = '', previousContent = '{dyna.Content}' WHERE ROWID = {dyna.Id}";
-                __sql = $"INSERT INTO {postFtsTableName} ({postFtsTableName}, rowid, content) VALUES ('delete', '{dyna.Id}')";
-            
+            _sql = isPhysicalDelete ? $"DELETE from tags WHERE ROWID = {dyna.Id}" :
+                                        $"UPDATE tags SET content = '', previousContent = '{dyna.Content}' WHERE ROWID = {dyna.Id}";
+            __sql = $"INSERT INTO {postFtsTableName} ({postFtsTableName}, rowid, content) VALUES ('delete', '{dyna.Id}')";
 
-            var result = await this._conn.ExecuteAsync(_sql);
-            var _result = await this._conn.ExecuteAsync(__sql);
+
+            var result = await _conn.ExecuteAsync(_sql);
+            var _result = await _conn.ExecuteAsync(__sql);
             await Rebuild(postTypeId);
 
             return;
@@ -59,20 +59,20 @@ namespace ss_blog_be.Services
 
             if (string.IsNullOrEmpty(dyna.PreviousContent)) return;
 
-            
+
             _sql = $"INSERT OR REPLACE tags SET content = '{dyna.PreviousContent}' WHERE ROWID = {dyna.Id}";
             __sql = $"INSERT OR REPLACE INTO {postFtsTableName}(rowid, content, previousContent) VALUES ('{dyna.Id}', '{dyna.PreviousContent}' ,'') Returning RowId";
-    
-            var result = await this._conn.ExecuteAsync(_sql);
-            var _result = await this._conn.ExecuteAsync(__sql);
-            
+
+            var result = await _conn.ExecuteAsync(_sql);
+            var _result = await _conn.ExecuteAsync(__sql);
+
             await Rebuild(postTypeId);
         }
 
         public async Task Rebuild(int postTypeId)
         {
             var postFtsTableName = getFTSTableName(postTypeId);
-            await this._conn.ExecuteAsync($"INSERT INTO {postFtsTableName}({postFtsTableName}) VALUES('rebuild');");
+            await _conn.ExecuteAsync($"INSERT INTO {postFtsTableName}({postFtsTableName}) VALUES('rebuild');");
         }
 
         public async Task<TagModel> getTagsAndFtsFor(int postId, int postTypeId)
@@ -92,17 +92,17 @@ namespace ss_blog_be.Services
                     .Select("ROWID", "postfts_rowid")
                     .Build();
 
-            var dyna = (await this._conn.QueryFirstOrDefaultAsync(sql));
+            var dyna = await _conn.QueryFirstOrDefaultAsync(sql);
 
             if (dyna == null) return new TagModel() { Id = -1 };
-            
+
             int id = Convert.ToInt32(DynamicExtensions.GetPropertyValueAs<long>(dyna, "id", 0));
             string tagsContent = DynamicExtensions.GetPropertyValueAs<string>(dyna, "tagsContent", string.Empty);
             string previousContent = DynamicExtensions.GetPropertyValueAs<string>(dyna, "previousContent", string.Empty);
             int ftsId = Convert.ToInt32(DynamicExtensions.GetPropertyValueAs<long>(dyna, "postfts_rowid", 0));
 
             return new TagModel { Content = tagsContent, PreviousContent = previousContent, Id = id, FtsId = ftsId };
-        } 
+        }
 
 
         public async Task UpdateTags(int postId, int postTypeId, ICollection<string> tags)
@@ -121,8 +121,8 @@ namespace ss_blog_be.Services
                 _sql = $"INSERT OR REPLACE INTO tags (ROWID, content, previousContent, postId) VALUES ({dyna.Id}, '{contentAsStr}', '', {postId})";
                 __sql = $"INSERT OR REPLACE INTO {postFtsTableName} (ROWID, content) VALUES ('{postTypeId}', '{contentAsStr}') Returning RowId";
 
-                var result = await this._conn.ExecuteAsync(_sql);
-                var _result = await this._conn.ExecuteAsync(__sql);
+                var result = await _conn.ExecuteAsync(_sql);
+                var _result = await _conn.ExecuteAsync(__sql);
                 await Rebuild(postTypeId);
 
             }
@@ -150,7 +150,7 @@ namespace ss_blog_be.Services
                             .Select("cnt", "ocurrences");
 
                 var query = sql.Build();
-                var result = await this._conn.QueryAsync<TagOcurrencesModel>(query);
+                var result = await _conn.QueryAsync<TagOcurrencesModel>(query);
 
                 return result.OrderByDescending(c => c.Ocurrences).ToArray();
             }
@@ -158,7 +158,7 @@ namespace ss_blog_be.Services
             {
                 throw;
             }
-            
+
         }
     }
-    }
+}

@@ -10,14 +10,14 @@ using ss_blog_be.Storage;
 using System.Net.WebSockets;
 [module: DapperAot]
 
-namespace ss_blog_be.Services
+namespace ss_blog_be.Services.Data
 {
     public class PostDataService
     {
         private SqliteConnection _conn { get; }
         private StorageService _storageService { get; }
 
-        public PostDataService([Required] SqliteConnection conn, StorageService storageService) 
+        public PostDataService([Required] SqliteConnection conn, StorageService storageService)
         {
             _conn = conn;
             _storageService = storageService;
@@ -49,25 +49,25 @@ namespace ss_blog_be.Services
                         .Where("type", SQLBuilderOperatorsEnum.EQUAL, "'" + model.Type + "'")
                         .Build();
 
-                var dyna = (await this._conn.QueryFirstOrDefaultAsync(sql));
+                var dyna = await _conn.QueryFirstOrDefaultAsync(sql);
 
                 if (dyna != null)
                 {
                     string delSql = $"DELETE FROM content WHERE  postId ='{id}' AND type = '{model.Type}'";
-                    await this._conn.ExecuteAsync(delSql);
+                    await _conn.ExecuteAsync(delSql);
 
                     //TODO: ADD CONFIG TO THIS
                     if (!model.Name.StartsWith("common"))
                     {
-                        await this._storageService.DeleteObject(dyna.fileName as string);
+                        await _storageService.DeleteObject(dyna.fileName as string);
                     }
 
-                    
+
                 }
             }
 
             string _sql = $"INSERT INTO content (postId, objId, type) VALUES ('{id}', '{fileName}', '{model.Type}') Returning RowId";
-            await this._conn.ExecuteAsync(_sql);
+            await _conn.ExecuteAsync(_sql);
 
             return model;
         }
@@ -77,7 +77,7 @@ namespace ss_blog_be.Services
             var fileName = id.ToString() + "/" + contentType.ToString() + "_" + Guid.NewGuid().ToString();
 
             // There can be only 1 preview and 1 render ....
-            if(contentType == ContentType.preview || contentType == ContentType.render
+            if (contentType == ContentType.preview || contentType == ContentType.render
                 || contentType == ContentType.descriptionRender || contentType == ContentType.titleRender)
             {
                 var sqlBuilder = new SQLBuilderS();
@@ -88,13 +88,13 @@ namespace ss_blog_be.Services
                         .Where("type", SQLBuilderOperatorsEnum.EQUAL, "'" + contentType + "'")
                         .Build();
 
-                var dyna = (await this._conn.QueryFirstOrDefaultAsync(sql));
+                var dyna = await _conn.QueryFirstOrDefaultAsync(sql);
 
-                if(dyna != null)
+                if (dyna != null)
                 {
                     string delSql = $"DELETE FROM content WHERE  postId ='{id}' AND type = '{contentType}'";
-                    await this._conn.ExecuteAsync(delSql);
-                    await this._storageService.DeleteObject(dyna.fileName as string);
+                    await _conn.ExecuteAsync(delSql);
+                    await _storageService.DeleteObject(dyna.fileName as string);
                 }
             }
 
@@ -107,9 +107,9 @@ namespace ss_blog_be.Services
             var url = await _storageService.UploadFileAsync(content, mimeType, fileName, tags);
 
             string _sql = $"INSERT INTO content (postId, objId, type) VALUES ('{id}', '{fileName}', '{contentType}') Returning RowId";
-            await this._conn.ExecuteAsync(_sql);
+            await _conn.ExecuteAsync(_sql);
 
-            return new ContentModel() { Name = fileName, Type = contentType, Url = url, PostId = id, MimeType = mimeType};
+            return new ContentModel() { Name = fileName, Type = contentType, Url = url, PostId = id, MimeType = mimeType };
         }
 
         public async Task Delete(int id)
@@ -125,7 +125,7 @@ namespace ss_blog_be.Services
                             .Where("postid", SQLBuilderOperatorsEnum.EQUAL, id)
                             .Build();
 
-                await this._conn.ExecuteAsync(_sql);
+                await _conn.ExecuteAsync(_sql);
 
                 var sqlBuilder = new SQLBuilderS();
                 var sql = sqlBuilder.Init()
@@ -134,14 +134,14 @@ namespace ss_blog_be.Services
                             .Where("ROWID", SQLBuilderOperatorsEnum.EQUAL, id)
                             .Build();
 
-                await this._conn.ExecuteAsync(sql);
+                await _conn.ExecuteAsync(sql);
             }
             catch (Exception ex)
             {
 
                 throw;
             }
-            
+
         }
 
         public async Task<PostModel> ChangePublishState(int id, PostModel model)
@@ -149,7 +149,7 @@ namespace ss_blog_be.Services
             bool newPublicationState = !model.IsPublished;
 
             string _sql = $"UPDATE post SET  isPublished = {newPublicationState.ToInt()} WHERE ROWID = {id}";
-            await this._conn.ExecuteAsync(_sql);
+            await _conn.ExecuteAsync(_sql);
 
             return new PostModel()
             {
@@ -173,7 +173,7 @@ namespace ss_blog_be.Services
 
         private async Task Update(PostModel model)
         {
-            if(model.Type == null || model.Type.Id == 0)
+            if (model.Type == null || model.Type.Id == 0)
             {
                 throw new Exception("type is required");
             }
@@ -185,7 +185,7 @@ namespace ss_blog_be.Services
                         .Where("ROWID", SQLBuilderOperatorsEnum.EQUAL, model.Id.Value)
                         .Build();
 
-            var dyna = (await this._conn.QueryFirstOrDefaultAsync(sqlQ));
+            var dyna = await _conn.QueryFirstOrDefaultAsync(sqlQ);
 
             if (dyna == null) throw new Exception("Not found");
 
@@ -193,11 +193,11 @@ namespace ss_blog_be.Services
             var b64Content = !string.IsNullOrEmpty(model.Content) ? model.Content.ToBase64() : string.Empty.ToBase64();
             var b64description = !string.IsNullOrEmpty(model.Description) ? model.Description.ToBase64() : string.Empty.ToBase64();
             var typeId = model.Type != null ? model.Type.Id.ToString() : "NULL";
-            var name = !string.IsNullOrEmpty(model.Name)? model.Name : string.Empty;
+            var name = !string.IsNullOrEmpty(model.Name) ? model.Name : string.Empty;
 
             string sql = $"UPDATE post SET name = '{name}', title = '{b64title}', content = '{b64Content}', description = '{b64description}', typeId = {typeId} WHERE ROWID = {model.Id}";
 
-            await this._conn.ExecuteAsync(sql, model);
+            await _conn.ExecuteAsync(sql, model);
         }
 
         private async Task<PostModel> Create(PostModel model)
@@ -205,12 +205,12 @@ namespace ss_blog_be.Services
             var b64Content = !string.IsNullOrEmpty(model.Content) ? model.Content.ToBase64() : string.Empty.ToBase64();
             var b64description = !string.IsNullOrEmpty(model.Description) ? model.Description.ToBase64() : string.Empty.ToBase64();
             var b64title = !string.IsNullOrEmpty(model.Title) ? model.Title.ToBase64() : string.Empty.ToBase64();
-            
+
             var typeId = model.Type != null ? model.Type.Id.ToString() : "NULL";
             var name = "New post created on " + DateTime.Today.ToShortDateString();
 
             string sql = $"INSERT INTO post (title, content, description, typeId, isPublished, createdAt, name) VALUES ('{b64title}', '{b64Content}', '{b64description}', {typeId}, {false.ToInt()} ,{DateTime.Now.Ticks}, '{name}') Returning RowId";
-            var id = await this._conn.ExecuteScalarAsync<int>(sql, model);
+            var id = await _conn.ExecuteScalarAsync<int>(sql, model);
 
             model.Id = id;
             return model;
@@ -218,7 +218,7 @@ namespace ss_blog_be.Services
 
         private async Task<PaginationModel> Count(int count, int offset, int? postTypeId, string[]? tags, bool? published)
         {
-            
+
             var sqlBuilder = new SQLBuilderS();
             var q = sqlBuilder.Init()
                         .From("post", "pst")
@@ -243,7 +243,7 @@ namespace ss_blog_be.Services
                 if (tags != null && tags.Length > 0)
                 {
                     var tagsStr = string.Join(" ", tags);
-                    
+
                     q.From("tags")
                     .Join("post", "tags", "ROWID", "postId", SQLBuilderJoinTypeEnum.LEFT)
                     .From(ftsTable)
@@ -253,7 +253,7 @@ namespace ss_blog_be.Services
             }
 
             var sql = q.Build();
-            var totalElements = await this._conn.QuerySingleAsync<int>(sql);
+            var totalElements = await _conn.QuerySingleAsync<int>(sql);
             return new PaginationModel(count, offset, totalElements);
         }
 
@@ -266,7 +266,7 @@ namespace ss_blog_be.Services
         {
             var pag = new PaginationModel(count, offset);
 
-            if (count != 0) 
+            if (count != 0)
             {
                 pag = await Count(count, offset, postTypeId, tags, published);
 
@@ -274,7 +274,7 @@ namespace ss_blog_be.Services
             }
 
             var result = new List<PostModel>();
-            
+
             var sqlBuilder = new SQLBuilderS();
             var q = sqlBuilder.Init()
                         .From("post", "pst")
@@ -285,14 +285,14 @@ namespace ss_blog_be.Services
                         .From("postType")
                         .Select("ROWID", "typeId")
                         .Select("name", "typeName")
-                        .Join("post", "postType", "typeId" ,"ROWID", SQLBuilderJoinTypeEnum.LEFT)
+                        .Join("post", "postType", "typeId", "ROWID", SQLBuilderJoinTypeEnum.LEFT)
                         .From("tags")
                         .Select("content", "tags")
                         .Join("post", "tags", "ROWID", "postId", SQLBuilderJoinTypeEnum.LEFT)
                         .Limit(count)
                         .Offset(offset);
 
-            
+
             if (published.HasValue)
             {
                 q.From("post")
@@ -305,7 +305,7 @@ namespace ss_blog_be.Services
                   .Where("typeId", SQLBuilderOperatorsEnum.EQUAL, postTypeId.Value);
             }
 
-           
+
 
             if (postTypeId.HasValue)
             {
@@ -324,11 +324,11 @@ namespace ss_blog_be.Services
 
             var sql = q.Build();
 
-            var dyna = (await this._conn.QueryAsync(sql));
+            var dyna = await _conn.QueryAsync(sql);
 
             if (dyna == null) return new PostResult([], pag);
 
-            foreach ( var dynb in dyna)
+            foreach (var dynb in dyna)
             {
 
                 PostModel post = PostModel.From(dynb);
@@ -338,7 +338,7 @@ namespace ss_blog_be.Services
                 post.Tags = string.IsNullOrEmpty(_tags) ? [] : _tags.Split(" ");
 
                 result.Add(post);
-               
+
             }
 
             var contents = await getContentFor(result.Where(c => c.Id.HasValue).Select(c => c.Id.Value).ToArray(), contentsToAdd);
@@ -366,28 +366,28 @@ namespace ss_blog_be.Services
                         .Where("type", SQLBuilderOperatorsEnum.IN, contentsToAdd.Select(c => c.ToString()).ToArray())
                         .Where("postId", SQLBuilderOperatorsEnum.IN, postIds).Build();
 
-                 var contentsFromDb = (await this._conn.QueryAsync(sql)).ToArray();
+                var contentsFromDb = (await _conn.QueryAsync(sql)).ToArray();
 
-                 foreach (var item in contentsFromDb)
-                 {
+                foreach (var item in contentsFromDb)
+                {
                     var name = item.name is string ? item.name as string : string.Empty;
-                    var url = string.IsNullOrEmpty(name) ? string .Empty : await _storageService.GenerateDownloadUrl(name);
+                    var url = string.IsNullOrEmpty(name) ? string.Empty : await _storageService.GenerateDownloadUrl(name);
                     var postId = Convert.ToInt32(DynamicExtensions.GetPropertyValueAs<long>(item, "postId", 0));
 
                     ContentType type = default;
 
-                    if(Enum.TryParse(item.type as string, out ContentType _type))
+                    if (Enum.TryParse(item.type as string, out ContentType _type))
                     {
                         type = _type;
                     }
 
 
                     contents.Add(new ContentModel() { Name = name, Url = url, Type = type, PostId = postId });
-                 }
+                }
             }
 
             return contents.ToArray();
-        } 
+        }
 
         public async Task<PostModel> Get(int id, bool loadContent)
         {
@@ -419,7 +419,7 @@ namespace ss_blog_be.Services
                         .Join("post", "content", "ROWID", "postid", SQLBuilderJoinTypeEnum.LEFT);
             }
 
-            var dyna = (await this._conn.QueryAsync(sql.Build()));
+            var dyna = await _conn.QueryAsync(sql.Build());
 
             if (dyna == null) return null;
 
@@ -432,7 +432,7 @@ namespace ss_blog_be.Services
             if (!loadContent) return data;
 
             //retrieve urls from storage ....
-            var validContents =  dyna.Where(c => c.contentId != null && c.contentId is string);
+            var validContents = dyna.Where(c => c.contentId != null && c.contentId is string);
 
             foreach (var c in validContents)
             {
@@ -443,12 +443,12 @@ namespace ss_blog_be.Services
 
 
                 var type = c.imgType;
-                
-                if(Enum.TryParse(type, out ContentType imgType))
+
+                if (Enum.TryParse(type, out ContentType imgType))
                 {
                     newContent.Type = imgType;
                 }
-                
+
                 data.Contents.Add(newContent);
             }
 

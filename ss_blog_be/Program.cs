@@ -8,6 +8,7 @@ using ss_blog_be.ApiHelpers;
 using ss_blog_be.Models;
 using ss_blog_be.Models.Storage;
 using ss_blog_be.Services;
+using ss_blog_be.Services.Data;
 using ss_blog_be.Storage;
 using ss_blog_be.Types;
 using System.Reflection;
@@ -140,12 +141,21 @@ tagsApi.MapPut("/{id}", async ([FromRoute] int id, [FromBody] TagUpdateModel mod
 
 var postTypeApi = app.MapGroup("/postType");
 
-postTypeApi.MapGet("", async () =>
+postTypeApi.MapGet("", async (HttpContext context, [FromQuery] int limit, [FromQuery] int offset) =>
 {
-    PostTypeService dataService = new PostTypeService(new ConnectionBuilder().Connect());
-    var result = await dataService.Get();
+    PostTypeDataService dataService = new PostTypeDataService(new ConnectionBuilder().Connect());
+    var result = await dataService.List(limit,offset);
 
     return Results.Ok(result);
+});
+
+postTypeApi.MapPost("", async ([FromBody] PostTypeModel model) =>
+{
+    PostTypeService service = new PostTypeService(new ConnectionBuilder().Connect());
+    var result = await service.Save(model);
+
+    return OnErrorHandler.HandleGet<PostTypeModel>(result);
+
 });
 
 var contentApi = app.MapGroup("/content");
@@ -188,7 +198,7 @@ sectionApi.MapPost("", async ([FromBody] SectionModel model) =>
 {
     try
     {
-        SectionService service = new SectionService(new ConnectionBuilder().Connect());
+        SectionDataService service = new SectionDataService(new ConnectionBuilder().Connect());
         var result = await service.Save(model);
         return Results.Ok(result);
     }
@@ -197,14 +207,11 @@ sectionApi.MapPost("", async ([FromBody] SectionModel model) =>
         return Results.Problem();
     }
 
-
-
-   
 });
 
 sectionApi.MapPut("/{id}", async ([FromRoute] int id, [FromBody] SectionModel model) =>
 {
-    SectionService service = new SectionService(new ConnectionBuilder().Connect());
+    SectionDataService service = new SectionDataService(new ConnectionBuilder().Connect());
     await service.Update(id, model);
 
     return Results.NoContent();
@@ -212,21 +219,21 @@ sectionApi.MapPut("/{id}", async ([FromRoute] int id, [FromBody] SectionModel mo
 
 sectionApi.MapGet("", async ([FromQuery] int limit, [FromQuery] int offset, [FromQuery] string[] tags, [FromQuery]bool? includeContent) =>
 {
-    SectionService dataService = new SectionService(new ConnectionBuilder().Connect());
+    SectionDataService dataService = new SectionDataService(new ConnectionBuilder().Connect());
     var result = await dataService.List(limit, offset, tags, includeContent);
     return Results.Ok(result);
 });
 
 sectionApi.MapGet("/{id}", async ([FromRoute] int id) =>
 {
-    SectionService dataService = new SectionService(new ConnectionBuilder().Connect());
+    SectionDataService dataService = new SectionDataService(new ConnectionBuilder().Connect());
     var result = await dataService.Get(id);
     return Results.Ok(result);
 });
 
 sectionApi.MapDelete("/{id}", async ([FromRoute] int id) =>
 {
-    SectionService service = new SectionService(new ConnectionBuilder().Connect());
+    SectionDataService service = new SectionDataService(new ConnectionBuilder().Connect());
     await service.Delete(id);
 
     return Results.NoContent();
@@ -235,6 +242,7 @@ sectionApi.MapDelete("/{id}", async ([FromRoute] int id) =>
 
 app.Run();
 
+[JsonSerializable(typeof(PaginatedResult<PostTypeModel>))]
 [JsonSerializable(typeof(IEnumerable<PostModel>))]
 [JsonSerializable(typeof(IEnumerable<TagOcurrencesModel>))]
 [JsonSerializable(typeof(TagOcurrencesModel[]))]
