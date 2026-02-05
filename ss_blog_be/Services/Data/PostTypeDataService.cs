@@ -21,6 +21,12 @@ namespace ss_blog_be.Services.Data
             _conn = conn;
         }
 
+        public async Task Update(PostTypeModel model)
+        {
+            string sql = $"UPDATE postType  set name =  '{model.Name}'";
+            await _conn.ExecuteAsync(sql);
+        }
+
         public async Task<PostTypeModel> Save(PostTypeModel model)
         {
             //INSERT INTO postType (name, ROWID) VALUES ('Code Snippet', 5);

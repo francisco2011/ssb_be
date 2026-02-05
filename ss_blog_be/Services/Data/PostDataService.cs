@@ -46,7 +46,7 @@ namespace ss_blog_be.Services.Data
                         .From("content")
                         .Select("objId", "fileName")
                         .Where("postId", SQLBuilderOperatorsEnum.EQUAL, id)
-                        .Where("type", SQLBuilderOperatorsEnum.EQUAL, "'" + model.Type + "'")
+                        .Where("type", SQLBuilderOperatorsEnum.EQUAL, model.Type.ToString())
                         .Build();
 
                 var dyna = await _conn.QueryFirstOrDefaultAsync(sql);
@@ -85,7 +85,7 @@ namespace ss_blog_be.Services.Data
                         .From("content")
                         .Select("objId", "fileName")
                         .Where("postId", SQLBuilderOperatorsEnum.EQUAL, id)
-                        .Where("type", SQLBuilderOperatorsEnum.EQUAL, "'" + contentType + "'")
+                        .Where("type", SQLBuilderOperatorsEnum.EQUAL, contentType.ToString())
                         .Build();
 
                 var dyna = await _conn.QueryFirstOrDefaultAsync(sql);
@@ -247,7 +247,7 @@ namespace ss_blog_be.Services.Data
                     q.From("tags")
                     .Join("post", "tags", "ROWID", "postId", SQLBuilderJoinTypeEnum.LEFT)
                     .From(ftsTable)
-                    .Where(ftsTable, SQLBuilderOperatorsEnum.EQUAL, "'" + tagsStr + "'")
+                    .Where(ftsTable, SQLBuilderOperatorsEnum.EQUAL, tagsStr)
                     .Join("tags", ftsTable, "ROWID", "rowid");
                 }
             }
@@ -316,7 +316,7 @@ namespace ss_blog_be.Services.Data
                     var tagsStr = string.Join(" ", tags);
 
                     q.From(ftsTable)
-                    .Where(ftsTable, SQLBuilderOperatorsEnum.EQUAL, "'" + tagsStr + "'")
+                    .Where(ftsTable, SQLBuilderOperatorsEnum.EQUAL, tagsStr)
                     .Join("tags", ftsTable, "ROWID", "rowid");
                 }
             }

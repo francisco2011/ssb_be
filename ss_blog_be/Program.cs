@@ -154,6 +154,24 @@ postTypeApi.MapPost("", async ([FromBody] PostTypeModel model) =>
     PostTypeService service = new PostTypeService(new ConnectionBuilder().Connect());
     var result = await service.Save(model);
 
+    return OnErrorHandler.HandlePost<PostTypeModel>(result);
+
+});
+
+postTypeApi.MapPut("/{id}", async ([FromRoute] int id, [FromBody] PostTypeModel model) =>
+{
+    PostTypeService service = new PostTypeService(new ConnectionBuilder().Connect());
+    var result = await service.Update(model);
+
+    return OnErrorHandler.HandleNoContent<PostTypeModel>(result);
+
+});
+
+postTypeApi.MapGet("/{id}", async ([FromRoute] int id) =>
+{
+    PostTypeService service = new PostTypeService(new ConnectionBuilder().Connect());
+    var result = await service.Get(id);
+
     return OnErrorHandler.HandleGet<PostTypeModel>(result);
 
 });

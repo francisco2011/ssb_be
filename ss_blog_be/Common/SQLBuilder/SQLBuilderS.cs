@@ -41,7 +41,8 @@ namespace ss_blog_be.Common.SQLBuilder
         
         public ISQLQueryBuilderTable Where(string column, SQLBuilderOperatorsEnum operatorC, string valueToCompare, SQLBuilderOperatorsEnum logicalOp = SQLBuilderOperatorsEnum.AND)
         {
-            _coordinator.AddWhere(column, operatorC, valueToCompare, logicalOp);
+            var val = $"'{valueToCompare}'";
+            _coordinator.AddWhere(column, operatorC, val, logicalOp);
             return this;
         }
 
