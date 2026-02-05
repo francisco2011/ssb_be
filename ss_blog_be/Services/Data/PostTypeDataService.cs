@@ -23,7 +23,7 @@ namespace ss_blog_be.Services.Data
 
         public async Task Update(PostTypeModel model)
         {
-            string sql = $"UPDATE postType  set name =  '{model.Name}'";
+            string sql = $"UPDATE postType  set name =  '{model.Name}' WHERE ROWID = {model.Id}";
             await _conn.ExecuteAsync(sql);
         }
 

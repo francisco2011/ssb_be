@@ -36,7 +36,8 @@ namespace ss_blog_be.Services
             if (string.IsNullOrEmpty(model.Name)) return Error.Validation("Name can not be empty");
 
             var postTypeFromDb = await postTypeService.Get(null, model.Name);
-            if (postTypeFromDb != null) return Error.Validation("Name is already in use");
+            if (postTypeFromDb != null && postTypeFromDb.Id != model.Id) return Error.Validation("Name is already in use");
+            if (postTypeFromDb != null && postTypeFromDb.Id == model.Id) return model;
 
             await postTypeService.Update(model);
 
