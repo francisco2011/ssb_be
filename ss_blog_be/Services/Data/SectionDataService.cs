@@ -91,7 +91,7 @@ namespace ss_blog_be.Services.Data
             if (includeContent.HasValue && includeContent.Value) q.Select("content", "content").Select("contentHtml", "contentHtml");
 
             if (tags != null && tags.Any())
-                q.Where("tag", SQLBuilderOperatorsEnum.IN, "(" + string.Join(",", tags.Select(c => "'" + c + "'").ToArray()) + ")");
+                q.Where("tag", SQLBuilderOperatorsEnum.IN, tags.Select(c => c).ToArray());
 
             q.Limit(count).Offset(offset);
 
@@ -177,8 +177,7 @@ namespace ss_blog_be.Services.Data
                 var name = dynb.name;
                 var tag = dynb.tag;
                 var id = dynb.id;
-                //var content = DynamicExtensions.HasProperty(dynb, "content") && !string.IsNullOrEmpty( dynb.content as string) ? (dynb.content as string).FromBase64() : string.Empty;
-
+                
                 result.Add(new SectionModel { Id = id, Name = name, Tag = tag, Modifiable = modifiable.ToBool() });
             }
 
