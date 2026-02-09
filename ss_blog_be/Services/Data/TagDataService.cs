@@ -54,11 +54,10 @@ namespace ss_blog_be.Services.Data
 
             var dyna = await getTagsAndFtsFor(postId, postTypeId);
 
+            if (dyna == null || string.IsNullOrEmpty(dyna.PreviousContent)) return;
+
             string _sql = string.Empty;
             string __sql = string.Empty;
-
-            if (string.IsNullOrEmpty(dyna.PreviousContent)) return;
-
 
             _sql = $"INSERT OR REPLACE tags SET content = '{dyna.PreviousContent}' WHERE ROWID = {dyna.Id}";
             __sql = $"INSERT OR REPLACE INTO {postFtsTableName}(rowid, content, previousContent) VALUES ('{dyna.Id}', '{dyna.PreviousContent}' ,'') Returning RowId";
@@ -94,7 +93,7 @@ namespace ss_blog_be.Services.Data
 
             var dyna = await _conn.QueryFirstOrDefaultAsync(sql);
 
-            if (dyna == null) return new TagModel() { Id = -1 };
+            if (dyna == null) return null;
 
             int id = Convert.ToInt32(DynamicExtensions.GetPropertyValueAs<long>(dyna, "id", 0));
             string tagsContent = DynamicExtensions.GetPropertyValueAs<string>(dyna, "tagsContent", string.Empty);
@@ -117,11 +116,15 @@ namespace ss_blog_be.Services.Data
                 string _sql = string.Empty;
                 string __sql = string.Empty;
 
-                if (!string.IsNullOrEmpty(dyna.Content) && contentAsStr == dyna.Content) return;
-                _sql = $"INSERT OR REPLACE INTO tags (ROWID, content, previousContent, postId) VALUES ({dyna.Id}, '{contentAsStr}', '', {postId})";
-                __sql = $"INSERT OR REPLACE INTO {postFtsTableName} (ROWID, content) VALUES ('{postTypeId}', '{contentAsStr}') Returning RowId";
+                if (dyna != null && !string.IsNullOrEmpty(dyna.Content) && contentAsStr == dyna.Content) return;
+
+                _sql = dyna == null ? $"INSERT into tags (content, previousContent, postId) values('{contentAsStr}', '', {postId}) RETURNING rowid" :
+                    $"UPDATE tags set content = '{contentAsStr}', previousContent = '' where ROWID = {dyna.Id} RETURNING rowid";
 
                 var result = await _conn.ExecuteAsync(_sql);
+
+                __sql = $"INSERT OR REPLACE INTO {postFtsTableName} (ROWID, content) VALUES ('{result}', '{contentAsStr}') Returning RowId";
+
                 var _result = await _conn.ExecuteAsync(__sql);
                 await Rebuild(postTypeId);
 
