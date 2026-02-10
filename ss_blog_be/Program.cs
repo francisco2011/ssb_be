@@ -178,7 +178,7 @@ postTypeApi.MapGet("/{id}", async ([FromRoute] int id) =>
 
 var contentApi = app.MapGroup("/content");
 
-contentApi.MapGet("/{name}", async ([FromRoute] string name, IOptions<StorageSettings> settingsAccessor) =>
+contentApi.MapGet("", async ([FromQuery] string name, IOptions<StorageSettings> settingsAccessor) =>
 {
     StorageService service = new StorageService(settingsAccessor.Value);
     var result = await service.GenerateDownloadUrlMainStorage(name);

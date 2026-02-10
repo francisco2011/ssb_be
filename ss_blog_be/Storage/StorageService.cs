@@ -199,7 +199,7 @@ namespace ss_blog_be.Storage
 
                 }
 
-                return await GenerateDownloadUrl(fileName, bucket);
+                return await GenerateDownloadUrl(fileName, bucket, false);
             }
             catch (Exception ex)
             {
@@ -234,7 +234,7 @@ namespace ss_blog_be.Storage
 
                 }
 
-                return await GenerateDownloadUrl(fileName, Settings.MainBucket);
+                return await GenerateDownloadUrl(fileName, Settings.MainBucket, false);
             }
             catch (Exception ex)
             {
@@ -244,21 +244,21 @@ namespace ss_blog_be.Storage
 
         public async Task<string> GenerateDownloadUrlMainStorage(string objectName)
         {
-            return await GenerateDownloadUrl(objectName, Settings.MainBucket);
+            return await GenerateDownloadUrl(objectName, Settings.MainBucket, true);
         }
 
         public async Task<string> GenerateDownloadUrl(string objectName)
         {
             if (string.IsNullOrEmpty(objectName)) return null;
 
-            return await GenerateDownloadUrl(objectName, Settings.MainBucket);
+            return await GenerateDownloadUrl(objectName, Settings.MainBucket, false);
 
         }
 
-        private async Task<string> GenerateDownloadUrl(string objectName, string bucket)
+        private async Task<string> GenerateDownloadUrl(string objectName, string bucket, bool? bypassPublicUrl)
         {
 
-            if (!string.IsNullOrEmpty(Settings.PublicUrl))
+            if (!string.IsNullOrEmpty(Settings.PublicUrl) && ( !bypassPublicUrl.HasValue || !bypassPublicUrl.Value))
             {
                 return Settings.PublicUrl + "/" + objectName;
             }
