@@ -1,7 +1,3 @@
-using Amazon.Runtime.Internal;
-using Dapper;
-using ErrorOr;
-using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using ss_blog_be.ApiHelpers;
@@ -11,7 +7,6 @@ using ss_blog_be.Services;
 using ss_blog_be.Services.Data;
 using ss_blog_be.Storage;
 using ss_blog_be.Types;
-using System.Reflection;
 using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateSlimBuilder(args);
@@ -51,12 +46,6 @@ postApi.MapPost("/{id}/clone", async ([FromRoute] int id, IOptions<StorageSettin
     return Results.Created($"/{result}", result);
 });
 
-//postApi.MapPatch("{id}", async ([FromRoute] int id, [FromBody] JsonPatchDocument<PostModel> patchDoc, IOptions<StorageSettings> settingsAccessor) =>
-//{
-    
-
-//});
-
 postApi.MapDelete("/{id}", async ([FromRoute] int id, IOptions<StorageSettings> settingsAccessor) =>
 {
     PostService dataService = new PostService(new ConnectionBuilder().Connect(), new StorageService(settingsAccessor.Value));
@@ -77,9 +66,21 @@ postApi.MapPut("/{id}/changePublishState", async ([FromRoute] int id, IOptions<S
 postApi.MapGet("/", async (HttpContext context, [FromQuery] int limit, [FromQuery] int offset, [FromQuery] int? typeId, [FromQuery] string[] tags, 
                                                 [FromQuery] bool? published, [FromQuery] ContentType[] contents, IOptions<StorageSettings> settingsAccessor) =>
 {
-    PostDataService dataService = new PostDataService(new ConnectionBuilder().Connect(), new StorageService(settingsAccessor.Value));
-    var result = await dataService.List(limit, offset, typeId, tags, published, contents);
-    return Results.Ok(result);
+
+    try
+    {
+        PostDataService dataService = new PostDataService(new ConnectionBuilder().Connect(), new StorageService(settingsAccessor.Value));
+        var result = await dataService.List(limit, offset, typeId, tags, published, contents);
+        return Results.Ok(result);
+    }
+    catch(Exception e)
+    {
+        var a = e;
+
+        return Results.Problem();
+    }
+
+
 });
 
 postApi.MapGet("/{id}", async ([FromRoute] int id, IOptions<StorageSettings> settingsAccessor) =>
@@ -186,10 +187,10 @@ contentApi.MapGet("", async ([FromQuery] string name, IOptions<StorageSettings> 
     return Results.Ok(result);
 });
 
-contentApi.MapGet("/storage/traverse", async (IOptions<StorageSettings> settingsAccessor, [FromQuery] string? bucket, [FromQuery] string[]? folders) =>
+contentApi.MapGet("/storage/traverse", async (IOptions<StorageSettings> settingsAccessor, [FromQuery] string? bucket, [FromQuery] string[]? folders, string[]? exclude) =>
 {
     StorageService service = new StorageService(settingsAccessor.Value);
-    var result = await service.Traverse(bucket, folders);
+    var result = await service.Traverse(bucket, folders, exclude);
 
     return Results.Ok(result);
 });

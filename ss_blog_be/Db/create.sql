@@ -42,6 +42,9 @@ CREATE TABLE IF NOT EXISTS section (ROWID INTEGER PRIMARY KEY AUTOINCREMENT, nam
 INSERT INTO section (ROWID, name, content, tag, createdAt, modifiable, contentHtml) VALUES (1, 'title', '', '{{title}}', NULL, 0, NULL);
 INSERT INTO section (ROWID, name, content, tag, createdAt, modifiable, contentHtml) VALUES (2, 'description', '', '{{description}}', NULL, 0, NULL);
 INSERT INTO section (ROWID, name, content, tag, createdAt, modifiable, contentHtml) VALUES (3, 'date', '', '{{date}}', NULL, 0, NULL);
+INSERT INTO section (ROWID, name, content, tag, createdAt, modifiable, contentHtml) VALUES (3, 'tags', '', '{{tags}}', NULL, 0, NULL);
+
 
 COMMIT TRANSACTION;
 PRAGMA foreign_keys = on;
+PRAGMA journal_mode = WAL;

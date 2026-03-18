@@ -1,6 +1,7 @@
 ﻿using Amazon.S3;
 using Amazon.S3.Model;
 using Amazon.S3.Transfer;
+using Microsoft.AspNetCore.Mvc.Routing;
 using ss_blog_be.Models;
 using ss_blog_be.Models.Storage;
 using System.Security.AccessControl;
@@ -62,7 +63,7 @@ namespace ss_blog_be.Storage
             };
         }
 
-        public async Task<StorageObjectModel[]> Traverse(string bucket, string[] folders)
+        public async Task<StorageObjectModel[]> Traverse(string bucket, string[] folders, string[] exclude)
         {
             if (string.IsNullOrEmpty(bucket))
             {
@@ -71,7 +72,7 @@ namespace ss_blog_be.Storage
 
             var allFoldersAsPrefix = folders != null && folders.Length > 0  ? string.Join("/", folders) : string.Empty;
             allFoldersAsPrefix = string.IsNullOrEmpty(allFoldersAsPrefix) ? allFoldersAsPrefix : allFoldersAsPrefix + "/";
-            return await GetContentPerBucketAsync(bucket, allFoldersAsPrefix, "/");
+            return await GetContentPerBucketAsync(bucket, allFoldersAsPrefix, "/", exclude);
         }
 
         public async Task<StorageObjectModel[]> GetAllBucketsAsync()
@@ -98,10 +99,12 @@ namespace ss_blog_be.Storage
             
         }
 
-        public async Task<StorageObjectModel[]> GetContentPerBucketAsync(string bucketName, string prefix, string delimiter)
+        public async Task<StorageObjectModel[]> GetContentPerBucketAsync(string bucketName, string prefix, string delimiter, string[] exclude)
         {
             // The AmazonS3Client automatically picks up credentials
             // from the environment or configuration.
+
+            exclude = exclude ?? [];
 
             try
             {
@@ -110,6 +113,7 @@ namespace ss_blog_be.Storage
                     BucketName = bucketName,
                     Delimiter = delimiter,
                     Prefix = prefix
+
                 });
 
                 var directories = new List<StorageObjectModel>();
@@ -138,16 +142,35 @@ namespace ss_blog_be.Storage
                     response.S3Objects.Where(c => c.Key != prefix).ToList()
                                         .ForEach(async c => {
 
-                                            objects.Add(new StorageObjectModel()
+                                            var name = c.Key.Replace(prefix, string.Empty);
+
+                                            var found = false;
+                                            foreach(string strToSearch in exclude)
                                             {
-                                                Id = c.Key,
-                                                Name = c.Key,
-                                                Type = (c.Key.EndsWith(delimiter) ? StorageObjectType.Directory : StorageObjectType.File),
-                                                Url = await GenerateDownloadUrl(c.Key),
-                                                Size = c.Size,
-                                                UpdatedOn = c.LastModified
-                                                
-                                            });
+                                                var cLower = c.Key.ToLowerInvariant();
+
+                                                if (cLower.Contains(strToSearch))
+                                                {
+                                                    found = true;
+                                                    break;
+                                                }
+                                            }
+
+                                            if (!found)
+                                            {
+                                                objects.Add(new StorageObjectModel()
+                                                {
+                                                    Id = c.Key,
+                                                    Name = name,
+                                                    Type = (c.Key.EndsWith(delimiter) ? StorageObjectType.Directory : StorageObjectType.File),
+                                                    Url = await GenerateDownloadUrl(c.Key),
+                                                    Size = c.Size,
+                                                    UpdatedOn = c.LastModified
+
+                                                });
+                                            } 
+
+                                            
                                         });
 
                 } 
